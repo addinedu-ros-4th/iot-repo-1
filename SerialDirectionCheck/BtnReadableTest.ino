@@ -11,7 +11,7 @@ void loop() {
         Serial.print("Received: ");
         Serial.println(received);
 
-        // "button_pressed" 메시지를 받으면 LED를 켭니다.
+        // "button_pressed" == LED on
         if (received.equals("button_pressed")) {
             digitalWrite(LED_PIN, HIGH);
             Serial.println("LED on");
