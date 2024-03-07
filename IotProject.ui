@@ -103,7 +103,7 @@
     <string>button controller</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="BtnDrawMode">
+  <widget class="QPushButton" name="BtnPressTest">
    <property name="geometry">
     <rect>
      <x>750</x>
