@@ -2,10 +2,11 @@ import sys
 from PyQt5.uic import loadUi
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QLineEdit,QDialog, QApplication, QStackedWidget
-from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint
+from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint, QDate
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from iot_database import Database
+import os
 
 
 import time
@@ -16,10 +17,11 @@ from io import BytesIO
 class Camera(QThread):
     update = pyqtSignal(QImage)
     
-    def __init__(self, parent=None):
+    def __init__(self, camera_index=0, parent=None):
         super(Camera, self).__init__(parent)
+        self.camera_index = camera_index
         self.running = False
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(self.camera_index)
 
     def run(self):
         self.running = True
@@ -36,7 +38,19 @@ class Camera(QThread):
     def stop(self):
         self.running = False
         self.cap.release()  
-        self.quit()       
+        self.quit()     
+
+    def capture_image(self):
+        ret, frame = self.cap.read()
+        if ret:
+            if not os.path.exists('capture_data'):
+                os.makedirs('capture_data')
+
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+            filename = f"capture_data/{timestamp}.jpg"
+
+            cv2.imwrite(filename, frame)
+            print(f"Image saved: {filename}")  
 
 class WelcomeScreen(QDialog):
     def __init__(self):
@@ -45,6 +59,7 @@ class WelcomeScreen(QDialog):
         self.login.clicked.connect(self.gotoLogin)
         self.passwordfield.setEchoMode(QLineEdit.Password)
         widget.resize(1200, 735) 
+
 
     def gotoLogin(self):
         login_screen = LoginScreen()
@@ -56,12 +71,21 @@ class LoginScreen(QDialog):
         super(LoginScreen, self).__init__()
         loadUi("iot_project.ui", self)
         
-        #Camera Thread
-        self.camera_thread = Camera()
-        self.camera_thread.update.connect(self.updateImage)  
+        #Camera thread setting
+        self.camera_thread1 = Camera(0)  
+        self.camera_thread2 = Camera(2)
+        self.camera_thread1.update.connect(self.updateImage)  
+        self.camera_thread2.update.connect(self.updateImage)
         self.BtnCamera = self.findChild(QPushButton, 'BtnCamera')
-        self.BtnCamera.clicked.connect(self.toggleCamera)
+        self.BtnCamera_2 = self.findChild(QPushButton, 'BtnCamera_2')
+        self.BtnCamera.clicked.connect(lambda: self.toggleCamera(self.camera_thread1, self.camera_thread2, self.BtnCamera, self.BtnCamera_2, 1))
+        self.BtnCamera_2.clicked.connect(lambda: self.toggleCamera(self.camera_thread2, self.camera_thread1, self.BtnCamera_2, self.BtnCamera, 2))
 
+        #capture
+        self.BtnCapture = self.findChild(QPushButton, 'BtnCapture')
+        self.BtnCapture.hide()
+        self.BtnCapture.clicked.connect(self.captureImage) 
+        
         #Pixmap default setting and Camera connecting
         image_url = "https://blogfiles.pstatic.net/MjAxNzEwMjJfMTEx/MDAxNTA4Njc4Njc1Njc3.C85V2pebYoO1miLHHj2sy_AAHZucqI3xs6GItxNk-k8g.4S5V4XrzkeGgT7znHjFmchmdceDOTLuEGO-D-8DWmY0g.PNG.verdicorporation/%EC%8A%A4%EB%A7%88%ED%8A%B8%ED%8C%9C.png"
         response = requests.get(image_url)
@@ -115,12 +139,21 @@ class LoginScreen(QDialog):
         self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
         self.DisplaySensorLog()
 
-    #connect table with DB
-    def DisplaySensorLog(self):
-        iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "**", "iot_project")
+    #connect table with DB (T.B.D)
+    def DisplaySensorLog(self, selected_date=None):
+        if selected_date is None:
+            selected_date = self.calender.selectedDate()
+        
+        # Check if selected_date is a QDate and convert to string if necessary
+        if isinstance(selected_date, QDate):
+            selected_date_str = selected_date.toString("yyyy-MM-dd")
+        else:
+            selected_date_str = selected_date
+
+        iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
         iot_db.connect()
 
-        df = iot_db.watch_log()
+        df = iot_db.watch_log(selected_date_str) 
 
         self.tableWidget.setRowCount(len(df))
         self.tableWidget.setColumnCount(len(df.columns))
@@ -131,45 +164,59 @@ class LoginScreen(QDialog):
                 self.tableWidget.setItem(row, col, QTableWidgetItem(str(df.iloc[row, col])))
 
         iot_db.close()
-
-    # #connect table with DB (T.B.D)
-    # def DisplaySensorLog(self, selected_date):
-    #     iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "**", "iot_project")
-    #     iot_db.connect()
-
-    #     df = iot_db.watch_log(selected_date)  
-
-    #     self.tableWidget.setRowCount(len(df))
-    #     self.tableWidget.setColumnCount(len(df.columns))
-    #     self.tableWidget.setHorizontalHeaderLabels(df.columns)
-
-    #     for row in range(len(df)):
-    #         for col in range(len(df.columns)):
-    #             self.tableWidget.setItem(row, col, QTableWidgetItem(str(df.iloc[row, col])))
-
-    #     iot_db.close()
             
     #Camera Method
     def closeEvent(self, event):
-        if self.camera_thread.isRunning():
-            self.camera_thread.stop()
-        super(LoginScreen, self).closeEvent(event)            
+        if self.active_camera_thread and self.active_camera_thread.isRunning():
+            self.active_camera_thread.stop()
+            self.active_camera_thread.wait()
 
-    def toggleCamera(self):
-        if self.camera_thread.isRunning():
-            self.camera_thread.stop()
-            self.camera_thread.wait()  
-            self.BtnCamera.setText("Plant 1 \n On")
-            self.image_label.setPixmap(self.defaultImage)
-            self.camera_thread = Camera()  
-            self.camera_thread.update.connect(self.updateImage)
+        super(LoginScreen, self).closeEvent(event)          
+
+    def toggleCamera(self, camera_thread_to_toggle, other_camera_thread, button, other_button, plant_number):
+        if camera_thread_to_toggle.isRunning():
+            camera_thread_to_toggle.stop()
+            camera_thread_to_toggle.wait()
+            button.setText(f"Plant {plant_number} \n Off")
+            other_button.show()
+            self.BtnCapture.hide()
+            self.create_new_camera_thread(camera_thread_to_toggle.camera_index)
+
         else:
-            self.camera_thread.start()
-            self.BtnCamera.setText("Plant 1 \n Off")
+            if other_camera_thread.isRunning():
+                other_camera_thread.stop()
+                other_camera_thread.wait()
+                other_button.setText(f"Plant {plant_number if plant_number == 1 else 2} Off")
+                other_button.show()
+
+            camera_thread_to_toggle.start()
+            self.active_camera_thread = camera_thread_to_toggle
+            button.setText(f"Plant {plant_number} \n On")
+            other_button.hide()
+            self.BtnCapture.show()
+    
+    def create_new_camera_thread(self, camera_index):
+        if camera_index == 0:
+            self.camera_thread1 = Camera(camera_index)
+            self.camera_thread1.update.connect(self.updateImage)
+        else:
+            self.camera_thread2 = Camera(camera_index)
+            self.camera_thread2.update.connect(self.updateImage)
+
+        if self.active_camera_thread.camera_index == camera_index:
+            self.active_camera_thread = self.camera_thread1 if camera_index == 0 else self.camera_thread2
+
+    def captureImage(self):
+        if self.active_camera_thread is not None:
+            self.active_camera_thread.capture_image()
 
     def updateImage(self, qt_image):
         self.image_label = self.findChild(QLabel, 'VisionLabel') 
+        pixmap = QPixmap.fromImage(qt_image)
         self.image_label.setPixmap(QPixmap.fromImage(qt_image))
+        scaled_pixmap = pixmap.scaled(self.image_label.width(), self.image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+        self.image_label.setPixmap(scaled_pixmap)
 
     #Resizing Method
     def onLogButtonClicked(self):
@@ -184,12 +231,12 @@ class LoginScreen(QDialog):
     def onDateSelected(self):
         selected_date = self.calender.selectedDate()
         self.DateField.setText(selected_date.toString("yyyy-MM-dd"))
-        # self.DisplaySensorLog(selected_date) ****set with TBD method
+        self.DisplaySensorLog(selected_date)
 
     #png upload
     def displayImageOnLabel(self, imagePath, labelWidget):
         pixmap = QPixmap(imagePath)
-        pixmap = pixmap.scaled(labelWidget.width(), labelWidget.height(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+        pixmap = pixmap.scaled(labelWidget.width(), labelWidget.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         labelWidget.setPixmap(pixmap)
 
     #control panel desgin
