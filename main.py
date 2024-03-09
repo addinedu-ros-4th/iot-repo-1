@@ -51,7 +51,7 @@ class WelcomeScreen(QDialog):
 class LoginScreen(QDialog):
     def __init__(self):
         super(LoginScreen, self).__init__()
-        loadUi("IotProject.ui", self)
+        loadUi("iot_project.ui", self)
         
         #Camera Thread
         self.camera_thread = Camera()
@@ -72,8 +72,12 @@ class LoginScreen(QDialog):
         self.LogButton.clicked.connect(self.onLogButtonClicked)
 
         #Calender Data
-        self.calendar_widget.clicked.connect(self.date_clicked)
-        self.last_selected_date = None
+        self.calender = self.findChild(QCalendarWidget, 'calender')
+        self.DateField = self.findChild(QLabel, 'DateField')
+        self.calender.selectionChanged.connect(self.onDateSelected)
+        
+        
+
 
     #Camera Method
     def closeEvent(self, event):
@@ -106,7 +110,10 @@ class LoginScreen(QDialog):
             self.parentWidget().resize(1200, 735)  
             self.expanded = False
 
-
+    #Calender Method
+    def onDateSelected(self):
+        selected_date = self.calender.selectedDate()
+        self.DateField.setText(selected_date.toString("yyyy-MM-dd"))
 
 
 
