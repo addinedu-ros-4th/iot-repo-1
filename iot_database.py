@@ -5,7 +5,7 @@ import time
 import pandas as pd
 
 
-sensor_type_list = ["조도", "습도", "토양 수분", "온도", "물 탱크"]
+sensor_type_list = ["조도", "습도", "토양 수분", "온도", "물 탱크", "초음파"]
 
 event_command_dict = {
 #   "밝기 상승" : ???    
@@ -17,7 +17,8 @@ event_command_dict = {
     "온도 상승" : "팬 동작",
     "온도 하락" : "방열 코일 동작",
     "물탱크 물부족" : "알림",
-    "캡쳐버튼 클릭" : "캡쳐"
+    "캡쳐버튼 클릭" : "캡쳐",
+    "성장" : "알림"
     }
 
 
@@ -121,33 +122,29 @@ class Database:
         return sensor_data_id, event, command
 
 
-    def watch_log(self):
+    def watch_log(self, selected_date):
         cursor = self.conn.cursor()
         query = """
-        select e.time_stamp, 
-            max(case when s.sensor_type = '조도' then s.value end) as `조도`,
-            max(case when s.sensor_type = '습도' then s.value end) as `습도`,
-            max(case when s.sensor_type = '토양 수분' then s.value end) as `토양 수분`, 
-            max(case when s.sensor_type = '온도' then s.value end) as `온도` 
-        from event_log e 
-        join sensor_data s on e.time_stamp = s.time_stamp 
+        select substring(e.time_stamp, 12, 8) as "시간", 
+            max(case when s.sensor_type = '온도' then s.value end) as `온도`,
+            max(case when s.sensor_type = '습도' then s.value end) as `대기습도`,
+            max(case when s.sensor_type = '토양 수분' then s.value end) as `토양수분`, 
+            max(case when s.sensor_type = '조도' then s.value end) as `밝기`
+        from event_log e
+        join sensor_data s on e.time_stamp = s.time_stamp
+        where date(e.time_stamp) = %s
         group by e.time_stamp
         """
-        df = pd.read_sql(query, self.conn)
+        df = pd.read_sql(query, self.conn, params=[selected_date])
         cursor.close()
         return df
 
-# conn = mysql.connector.connect(
-#     host = "iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com",
-#     port = 3306,
-#     user = "admin",
-#     password = "qwer1234",
-#     database = "iot_project"
-# )
 
 def main():
 
-    iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
+    # iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
+    iot_db = Database("localhost", 3306, "root", "amrbase1", "iot_project")
+
     iot_db.connect()
 
     for i in range(10):
@@ -163,8 +160,8 @@ def main():
                 log = (sensor_data_id, time_stamp, event, command)
                 iot_db.insert_event_log(log)
         time.sleep(1)
-
-    df = iot_db.watch_log()
+    selected_date = "2024-03-09"
+    df = iot_db.watch_log(selected_date)
     print(df)
     iot_db.close()
  
