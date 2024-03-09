@@ -117,7 +117,7 @@ class LoginScreen(QDialog):
 
     #connect table with DB
     def DisplaySensorLog(self):
-        iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
+        iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "**", "iot_project")
         iot_db.connect()
 
         df = iot_db.watch_log()
