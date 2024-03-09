@@ -21,13 +21,6 @@ event_command_dict = {
     }
 
 
-# conn = mysql.connector.connect(
-#     host = "iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com",
-#     port = 3306,
-#     user = "admin",
-#     password = "qwer1234",
-#     database = "iot_project"
-# )
 
 class Database:
     def __init__(self, host, port, user, password, database):
@@ -144,10 +137,17 @@ class Database:
         cursor.close()
         return df
 
+# conn = mysql.connector.connect(
+#     host = "iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com",
+#     port = 3306,
+#     user = "admin",
+#     password = "qwer1234",
+#     database = "iot_project"
+# )
 
 def main():
 
-    iot_db = Database("localhost", 3306, "root", "amrbase1", "iot_project")
+    iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
     iot_db.connect()
 
     for i in range(10):
@@ -164,7 +164,7 @@ def main():
                 iot_db.insert_event_log(log)
         time.sleep(1)
 
-    df = lot_db.watch_log()
+    df = iot_db.watch_log()
     print(df)
     iot_db.close()
  
