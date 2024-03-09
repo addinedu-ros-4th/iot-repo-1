@@ -21,7 +21,7 @@ def getconn() -> pymysql.connections.Connection:
 
 # 새 사용자 생성
 new_user = 'yoonha'
-new_password = 'qwer1234'
+new_password = '**'
 create_user_query = f"CREATE USER '{new_user}'@'%' IDENTIFIED BY '{new_password}';"
 
 conn = getconn()
