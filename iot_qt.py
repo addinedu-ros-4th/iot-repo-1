@@ -2,9 +2,12 @@ import sys
 from PyQt5.uic import loadUi
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QLineEdit,QDialog, QApplication, QStackedWidget
-from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal
+from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from iot_database import Database
+
+
 import time
 import cv2
 import requests
@@ -75,10 +78,77 @@ class LoginScreen(QDialog):
         self.calender = self.findChild(QCalendarWidget, 'calender')
         self.DateField = self.findChild(QLabel, 'DateField')
         self.calender.selectionChanged.connect(self.onDateSelected)
-        
-        
 
+        #png upload
+        self.TempDisplay = self.findChild(QLabel, 'TempDisplay')
+        self.AirHumidDisplay = self.findChild(QLabel, 'AirHumidDisplay')
+        self.GroundHumidDisplay = self.findChild(QLabel, 'GroundHumidDisplay')
+        self.BrightDisplay = self.findChild(QLabel, 'BrightDisplay')
+        self.AirHumidDisplay = self.findChild(QLabel, 'AirHumidDisplay')
+        self.HeightDisplay = self.findChild(QLabel, 'HeightDisplay')
+        self.CamerDisplay = self.findChild(QLabel, 'CamerDisplay')
+        
+        self.displayImageOnLabel("icon_pictogram/temp.png", self.TempDisplay)
+        self.displayImageOnLabel("icon_pictogram/airhumid.png", self.AirHumidDisplay)
+        self.displayImageOnLabel("icon_pictogram/ground_humid.png", self.GroundHumidDisplay)
+        self.displayImageOnLabel("icon_pictogram/bright.png", self.BrightDisplay)
+        self.displayImageOnLabel("icon_pictogram/height.png", self.HeightDisplay)
+        self.displayImageOnLabel("icon_pictogram/camera.png", self.CamerDisplay)
 
+        #pannel design
+        button_direction_mapping = {
+            'Temp': ['Max', 'Min'],
+            'AirHum': ['Max', 'Min'],
+            'GndHum': ['Max', 'Min'],
+            'Bright': ['Max', 'Min']
+        }
+
+        for sensor_type, directions in button_direction_mapping.items():
+            for direction in directions:
+                button_name = f"{sensor_type}{direction}"
+                button = self.findChild(QPushButton, button_name)
+                if button:
+                    icon_direction = 'up' if direction == 'Max' else 'down'
+                    button.setIcon(self.createTriangleIcon(icon_direction))
+        
+        #DB connection on tableWidget
+        self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
+        self.DisplaySensorLog()
+
+    #connect table with DB
+    def DisplaySensorLog(self):
+        iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
+        iot_db.connect()
+
+        df = iot_db.watch_log()
+
+        self.tableWidget.setRowCount(len(df))
+        self.tableWidget.setColumnCount(len(df.columns))
+        self.tableWidget.setHorizontalHeaderLabels(df.columns)
+
+        for row in range(len(df)):
+            for col in range(len(df.columns)):
+                self.tableWidget.setItem(row, col, QTableWidgetItem(str(df.iloc[row, col])))
+
+        iot_db.close()
+
+    # #connect table with DB (T.B.D)
+    # def DisplaySensorLog(self, selected_date):
+    #     iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "**", "iot_project")
+    #     iot_db.connect()
+
+    #     df = iot_db.watch_log(selected_date)  
+
+    #     self.tableWidget.setRowCount(len(df))
+    #     self.tableWidget.setColumnCount(len(df.columns))
+    #     self.tableWidget.setHorizontalHeaderLabels(df.columns)
+
+    #     for row in range(len(df)):
+    #         for col in range(len(df.columns)):
+    #             self.tableWidget.setItem(row, col, QTableWidgetItem(str(df.iloc[row, col])))
+
+    #     iot_db.close()
+            
     #Camera Method
     def closeEvent(self, event):
         if self.camera_thread.isRunning():
@@ -114,7 +184,41 @@ class LoginScreen(QDialog):
     def onDateSelected(self):
         selected_date = self.calender.selectedDate()
         self.DateField.setText(selected_date.toString("yyyy-MM-dd"))
+        # self.DisplaySensorLog(selected_date) ****set with TBD method
 
+    #png upload
+    def displayImageOnLabel(self, imagePath, labelWidget):
+        pixmap = QPixmap(imagePath)
+        pixmap = pixmap.scaled(labelWidget.width(), labelWidget.height(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+        labelWidget.setPixmap(pixmap)
+
+    #control panel desgin
+    def createTriangleIcon(self, direction):
+        pixmap = QPixmap(20, 20)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(Qt.black)
+
+        if direction == 'up':
+            points = QPolygon([
+                QPoint(10, 5),
+                QPoint(15, 15),
+                QPoint(5, 15)
+            ])
+        elif direction == 'down':
+            points = QPolygon([
+                QPoint(5, 5),
+                QPoint(15, 5),
+                QPoint(10, 15)
+            ])
+        else:
+            points = QPolygon() 
+
+        painter.drawPolygon(points)
+        painter.end()
+
+        return QIcon(pixmap)
 
 
 if __name__ == '__main__':

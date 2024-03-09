@@ -1055,17 +1055,32 @@ color: rgb(255, 151, 151);</string>
    </property>
    <column>
     <property name="text">
-     <string>Name</string>
+     <string>This</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>Age</string>
+     <string>is</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>Address</string>
+     <string>Table</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>follow</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>db</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>Column</string>
     </property>
    </column>
   </widget>
