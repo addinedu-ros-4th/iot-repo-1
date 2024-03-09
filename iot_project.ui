@@ -464,6 +464,9 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
   <widget class="QLabel" name="VisionLabel">
    <property name="geometry">
     <rect>
@@ -484,7 +487,7 @@
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>630</y>
+     <y>627</y>
      <width>141</width>
      <height>81</height>
     </rect>
@@ -495,6 +498,16 @@
      <weight>75</weight>
      <bold>true</bold>
     </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton
+{
+	border:none;
+	border-radius:15px;
+   background-color:rgba(13, 21, 230,0.7);
+	color:rgb(255,255,255);
+	padding:0;
+}</string>
    </property>
    <property name="text">
     <string>Capture</string>
@@ -516,6 +529,16 @@
      <bold>true</bold>
     </font>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton
+{
+	border:none;
+	border-radius:15px;
+   background-color:rgba(153, 21, 180,0.5);
+	color:rgb(255,255,255);
+	padding:0;
+}</string>
+   </property>
    <property name="text">
     <string>Plant 1</string>
    </property>
@@ -529,6 +552,12 @@
      <height>111</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel
+{
+ border:none;
+}</string>
+   </property>
    <property name="frameShape">
     <enum>QFrame::StyledPanel</enum>
    </property>
@@ -538,8 +567,8 @@
     <rect>
      <x>320</x>
      <y>20</y>
-     <width>131</width>
-     <height>81</height>
+     <width>171</width>
+     <height>78</height>
     </rect>
    </property>
    <property name="font">
@@ -550,7 +579,19 @@
     </font>
    </property>
    <property name="styleSheet">
-    <string notr="true">background-color:rgba(173, 216, 230);</string>
+    <string notr="true">QLineEdit
+{
+	border:none;
+	border-radius:25px;
+   background-color:rgba(173, 216, 230,0.7);
+	color:rgb(255,255,255);
+	min-width:171px;
+	min-height:78px;
+	max-width:171px;
+	max-height:78px;
+
+	padding:0;
+}</string>
    </property>
    <property name="text">
     <string/>
@@ -571,6 +612,12 @@
      <height>111</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel
+{
+ border:none;
+}</string>
+   </property>
    <property name="frameShape">
     <enum>QFrame::StyledPanel</enum>
    </property>
@@ -583,6 +630,12 @@
      <width>121</width>
      <height>81</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel
+{
+ border:none;
+}</string>
    </property>
    <property name="frameShape">
     <enum>QFrame::StyledPanel</enum>
@@ -607,6 +660,16 @@
      <bold>true</bold>
     </font>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton
+{
+	border:none;
+	border-radius:15px;
+   background-color:rgba(153, 21, 180,0.5);
+	color:rgb(255,255,255);
+	padding:0;
+}</string>
+   </property>
    <property name="text">
     <string>Plant 2</string>
    </property>
@@ -629,6 +692,9 @@
    </property>
    <property name="cursor">
     <cursorShape>UpArrowCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
    </property>
    <property name="text">
     <string>MAX</string>
@@ -653,6 +719,9 @@
    <property name="cursor">
     <cursorShape>UpArrowCursor</cursorShape>
    </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <property name="text">
     <string>MIN</string>
    </property>
@@ -675,6 +744,9 @@
    </property>
    <property name="cursor">
     <cursorShape>UpArrowCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
    </property>
    <property name="text">
     <string>MAX</string>
@@ -699,6 +771,9 @@
    <property name="cursor">
     <cursorShape>UpArrowCursor</cursorShape>
    </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <property name="text">
     <string>MIN</string>
    </property>
@@ -708,8 +783,8 @@
     <rect>
      <x>320</x>
      <y>150</y>
-     <width>131</width>
-     <height>81</height>
+     <width>171</width>
+     <height>78</height>
     </rect>
    </property>
    <property name="font">
@@ -720,7 +795,19 @@
     </font>
    </property>
    <property name="styleSheet">
-    <string notr="true">background-color:rgba(173, 216, 230);</string>
+    <string notr="true">QLineEdit
+{
+	border:none;
+	border-radius:25px;
+   background-color:rgba(173, 216, 230,0.7);
+	color:rgb(255,255,255);
+	min-width:171px;
+	min-height:78px;
+	max-width:171px;
+	max-height:78px;
+
+	padding:0;
+}</string>
    </property>
    <property name="text">
     <string/>
@@ -740,6 +827,12 @@
      <width>121</width>
      <height>111</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel
+{
+ border:none;
+}</string>
    </property>
    <property name="frameShape">
     <enum>QFrame::StyledPanel</enum>
@@ -764,6 +857,9 @@
    <property name="cursor">
     <cursorShape>UpArrowCursor</cursorShape>
    </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <property name="text">
     <string>MIN</string>
    </property>
@@ -787,6 +883,9 @@
    <property name="cursor">
     <cursorShape>UpArrowCursor</cursorShape>
    </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <property name="text">
     <string>MAX</string>
    </property>
@@ -800,6 +899,12 @@
      <height>111</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel
+{
+ border:none;
+}</string>
+   </property>
    <property name="frameShape">
     <enum>QFrame::StyledPanel</enum>
    </property>
@@ -812,6 +917,12 @@
      <width>121</width>
      <height>91</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel
+{
+ border:none;
+}</string>
    </property>
    <property name="frameShape">
     <enum>QFrame::StyledPanel</enum>
@@ -836,6 +947,9 @@
    <property name="cursor">
     <cursorShape>UpArrowCursor</cursorShape>
    </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <property name="text">
     <string>MAX</string>
    </property>
@@ -859,6 +973,9 @@
    <property name="cursor">
     <cursorShape>UpArrowCursor</cursorShape>
    </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <property name="text">
     <string>MIN</string>
    </property>
@@ -868,8 +985,8 @@
     <rect>
      <x>320</x>
      <y>420</y>
-     <width>131</width>
-     <height>81</height>
+     <width>171</width>
+     <height>78</height>
     </rect>
    </property>
    <property name="font">
@@ -880,7 +997,19 @@
     </font>
    </property>
    <property name="styleSheet">
-    <string notr="true">background-color:rgba(173, 216, 230);</string>
+    <string notr="true">QLineEdit
+{
+	border:none;
+	border-radius:25px;
+   background-color:rgba(173, 216, 230,0.7);
+	color:rgb(255,255,255);
+	min-width:171px;
+	min-height:78px;
+	max-width:171px;
+	max-height:78px;
+
+	padding:0;
+}</string>
    </property>
    <property name="text">
     <string/>
@@ -897,8 +1026,8 @@
     <rect>
      <x>320</x>
      <y>290</y>
-     <width>131</width>
-     <height>81</height>
+     <width>171</width>
+     <height>78</height>
     </rect>
    </property>
    <property name="font">
@@ -909,7 +1038,19 @@
     </font>
    </property>
    <property name="styleSheet">
-    <string notr="true">background-color:rgba(173, 216, 230);</string>
+    <string notr="true">QLineEdit
+{
+	border:none;
+	border-radius:25px;
+   background-color:rgba(173, 216, 230,0.7);
+	color:rgb(255,255,255);
+	min-width:171px;
+	min-height:78px;
+	max-width:171px;
+	max-height:78px;
+
+	padding:0;
+}</string>
    </property>
    <property name="text">
     <string/>
@@ -925,9 +1066,9 @@
    <property name="geometry">
     <rect>
      <x>150</x>
-     <y>530</y>
-     <width>141</width>
-     <height>91</height>
+     <y>540</y>
+     <width>171</width>
+     <height>78</height>
     </rect>
    </property>
    <property name="font">
@@ -938,7 +1079,19 @@
     </font>
    </property>
    <property name="styleSheet">
-    <string notr="true">background-color:rgba(173, 216, 230);</string>
+    <string notr="true">QLineEdit
+{
+	border:none;
+	border-radius:25px;
+   background-color:rgba(173, 216, 230,0.7);
+	color:rgb(255,255,255);
+	min-width:171px;
+	min-height:78px;
+	max-width:171px;
+	max-height:78px;
+
+	padding:0;
+}</string>
    </property>
    <property name="text">
     <string/>
@@ -953,10 +1106,10 @@
   <widget class="QPushButton" name="LogButton">
    <property name="geometry">
     <rect>
-     <x>300</x>
+     <x>340</x>
      <y>530</y>
-     <width>211</width>
-     <height>91</height>
+     <width>171</width>
+     <height>78</height>
     </rect>
    </property>
    <property name="font">
@@ -965,6 +1118,21 @@
      <weight>75</weight>
      <bold>true</bold>
     </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton
+{
+	border:none;
+	border-radius:25px;
+	background-color:rgb(123, 41, 20);
+	color:rgb(255,255,255);
+	min-width:171px;
+	min-height:78px;
+	max-width:171px;
+	max-height:78px;
+
+	padding:0;
+}</string>
    </property>
    <property name="text">
     <string>Event Log</string>
