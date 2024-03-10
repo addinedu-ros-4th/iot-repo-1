@@ -16,12 +16,11 @@ print(f"Server is listening on {host}:{port}")
 
 while True:
     client_socket, addr = server_socket.accept() # esp32의 주소와 어떤 값을 받아옴.  
-    print(f"Connection from {addr}") # 받아온 값과 ip주소가 출력
+    #print(f"Connection from {addr}") # 받아온 값과 ip주소가 출력
 
     data = client_socket.recv(1024) #esp에서 보내는 데이터를 저장하는 변수
     if data:
         print(f"Received data: {data.decode('utf-8')}") #데이터 출력
-    else:
-        print("connection end")
+
 
     client_socket.close()
