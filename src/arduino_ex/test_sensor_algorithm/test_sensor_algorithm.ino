@@ -83,8 +83,7 @@ void loop() {
  Serial.println();
 
  if (pledval > 60) { // 조도센서값이 60이 넘으면
-  analogWrite(ledpin, ledval);  // LED는 조도센서 값의 밝기로 켜라 
-  // analogWrite(ledpin, ledval);  // LED는 조도센서 값의 밝기로 켜라 
+  analogWrite(ledpin, pledval);  // LED는 조도센서 값의 밝기로 켜라 
  } 
   else{  // 그 외 조도센서값이면 LED를 꺼라
   analogWrite(ledpin, LOW);    
