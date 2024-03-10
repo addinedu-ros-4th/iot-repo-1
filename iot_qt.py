@@ -319,25 +319,25 @@ class LoginScreen(QDialog):
 
     #web socket commuincation with JSON file (qt --> server : 'selected_date' --> server )
     def SendDateToServer(self, date_str):
-        # JSON 데이터 생성
+        # making JSON data
         data = json.dumps({"selected_date": date_str})
 
-        # 로컬 파일에 JSON 데이터 저장
+        # saving JSON : date info
         with open("selected_date.json", "w") as file:
             file.write(data)
 
-        # 서버에 연결
+        # connect server
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect(("172.30.1.50", 8080))
 
-        # 데이터 송신
+        # transmitte data
         client_socket.sendall(data.encode('utf-8'))
 
-        # 서버로부터 JSON 데이터 수신
+        # receive data from server
         response = client_socket.recv(9000)
         df_json = response.decode('utf-8')
 
-        # 수신된 JSON 데이터로 DataFrame 생성
+        # json to pandas.df
         try:
             s = StringIO(df_json)
             df = pd.read_json(s, orient='records')
@@ -345,7 +345,7 @@ class LoginScreen(QDialog):
             print(f"JSON parsing error: {e}")
             df = pd.DataFrame()
 
-        # 로컬 파일에 JSON 데이터 저장
+        # json data saving
         with open("client_data.json", "w") as file:
             file.write(df_json)
 
