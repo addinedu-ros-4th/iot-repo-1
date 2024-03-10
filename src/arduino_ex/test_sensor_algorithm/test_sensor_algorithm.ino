@@ -1,5 +1,6 @@
 #include <Wire.h> 
 #include <DHT.h> // 온습도센서를 사용하기 위한 라이브러리 추가
+#include<Servo.h> //Servo 라이브러리를 추가
 #define DHTPIN 4 // 온습도센서 데이터단자 연결 핀번호
 #define DHTTYPE DHT11 // DHT11 센서일 경우 DHT11 , DHT22 센서일 경우 DHT22
 #define SOIL_HUMI1 A0
@@ -10,9 +11,12 @@
 #define A_1B 10 // 모터드라이버 A_1B 단자 연결 핀번호
 #define A_2A 11 // 모터드라이버 A_1A 단자 연결 핀번호(워터모터1용)
 #define A_2B 12 // 모터드라이버 A_1B 단자 연결 핀번호
+#define B_1A 5 // 모터드라이버 A_1A 단자 연결 핀번호 (미니모터용)
+#define B_1B 6 // 모터드라이버 A_1B 단자 연결 핀번호
 
 DHT dht(DHTPIN, DHTTYPE); // 온습도센서 사용 설정
 
+Servo servo;      //Servo 클래스로 servo객체 생성
 int cds_pin = A1; // 조도센서에 사용할 핀번호
 int echo = 8; // 초음파센서
 int trig = 13; // 초음파센서
@@ -36,6 +40,11 @@ void setup() {
  pinMode(A_2B, OUTPUT);  
  digitalWrite(A_2A, LOW); // 모터드라이브 초기값은 끈 상태
  digitalWrite(A_2B, LOW); 
+ pinMode(B_1A, OUTPUT);
+ pinMode(B_1B, OUTPUT);  
+ digitalWrite(B_1A, LOW);
+ digitalWrite(B_1B, LOW); 
+ servo.attach(2);
 }
 void loop() {  
  // 온 습도 센서
@@ -111,15 +120,15 @@ if(psoil1 < 20) { // 토양수분값이 20미만이면
  digitalWrite(A_1B, LOW);
  digitalWrite(A_2A, LOW);
  digitalWrite(A_2B, LOW);
+ digitalWrite(B_1A, LOW); // 워터펌프가 동작하는 동안 미니모터는 중지, 미니모터와 워터펌프가 동시 작동 시 전압 부족 현상 막음 
+ digitalWrite(B_1B, LOW); 
  }
  else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
  digitalWrite(A_1A, LOW);
  digitalWrite(A_1B, LOW);
- digitalWrite(A_2A, LOW);
- digitalWrite(A_2B, LOW); 
 } 
  delay(1000);
-
+ 
 if(psoil2 < 20) { // 토양수분값이 20미만이면
  analogWrite(A_2A, 220); // 값을 변화(0~255)시키면서 호스에서 나오는 물의 양을 적정하게 설정
  digitalWrite(A_2B, LOW);
@@ -129,13 +138,48 @@ if(psoil2 < 20) { // 토양수분값이 20미만이면
  digitalWrite(A_2B, LOW);
  digitalWrite(A_1A, LOW);
  digitalWrite(A_1B, LOW);
+ digitalWrite(B_1A, LOW); // 워터펌프가 동작하는 동안 미니모터는 중지, 미니모터와 워터펌프가 동시 작동 시 전압 부족 현상 막음 
+ digitalWrite(B_1B, LOW); 
  }
- else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
- digitalWrite(A_1A, LOW);
- digitalWrite(A_1B, LOW); 
+else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
  digitalWrite(A_2A, LOW);
  digitalWrite(A_2B, LOW);
 } 
+ delay(1000);
 
+if(t >= 22 || h >= 70) { // 온도가 30이상 또는 습도가 80이상이면,  || => [Shift] + [\]
+delay(5000);
+ analogWrite(B_1A, 200); // 값을 변화(0~255)시키면서 팬의 세기를 설정
+ digitalWrite(B_1B, LOW);
+ delay(5000);
+ digitalWrite(B_1A, LOW); // 값을 변화(0~255)시키면서 팬의 세기를 설정
+ digitalWrite(B_1B, LOW);
+ digitalWrite(A_1A, LOW);// 미니모터가 동작하는 동안 워터펌프는 중지, 미니모터와 워터펌프가 동시 작동 시 전압 부족 현상 막음 
+ digitalWrite(A_1B, LOW);
+} 
+else{ // 그 외 온습도 측정값이면 미니모터를 꺼라
+ digitalWrite(B_1A, LOW);
+ digitalWrite(B_1B, LOW);
+}
+
+
+if(h > 60){
+ servo.write(90.0);
+ analogWrite(B_1A, 200); // 값을 변화(0~255)시키면서 팬의 세기를 설정
+ digitalWrite(B_1B, LOW);
+ delay(10000); 
+ digitalWrite(B_1A, LOW); // 값을 변화(0~255)시키면서 팬의 세기를 설정
+ digitalWrite(B_1B, LOW);  
+ digitalWrite(A_1A, LOW);
+ digitalWrite(A_1B, LOW);
+ digitalWrite(A_2A, LOW);
+ digitalWrite(A_2B, LOW);
+ }
+else{
+//  Serial.print(humi);
+ servo.write(175.0); 
+ digitalWrite(B_1A, LOW); // 값을 변화(0~255)시키면서 팬의 세기를 설정
+ digitalWrite(B_1B, LOW);     
+}
  delay(2000); 
 }
