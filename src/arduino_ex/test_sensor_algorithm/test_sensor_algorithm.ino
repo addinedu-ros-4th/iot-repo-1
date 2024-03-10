@@ -55,11 +55,18 @@ void loop() {
  int tank = analogRead(TANK_WATER); 
  int humi = analogRead(HUMI_WATER);
 
+ Serial.println();
+ Serial.print("===================================");
+ Serial.println();
  Serial.print("화분 1 수분량: ");
  Serial.print(psoil1);
- Serial.print(" / 화분 2 수분량: ");
+ Serial.println();
+ Serial.println();  
+ Serial.print("화분 2 수분량: ");
  Serial.print(psoil2); 
- Serial.print("  조도: ");
+ Serial.println();
+ Serial.println();
+ Serial.print("조도: ");
  Serial.print(pledval);
  Serial.print(" / 온도: ");
  Serial.print(t);
@@ -69,11 +76,10 @@ void loop() {
  Serial.print("초음파와 거리: ");
  Serial.print(distance);
  Serial.println("cm");
- Serial.print("  물탱크 수위: ");
+ Serial.print("물탱크 수위: ");
  Serial.print(tank);
  Serial.print("  가습기 수위: ");
  Serial.print(humi);
- Serial.println();
  Serial.println();
 
  if (pledval > 60) { // 조도센서값이 60이 넘으면
