@@ -62,7 +62,7 @@ class Database:
         
     def insert_event_log(self, log):
         cursor = self.conn.cursor()
-        query = "INSERT INTO event_log (data_id, time_stamp, event, command) VALUES (%s, %s, %s, %s)"
+        query = "INSERT INTO event_log (data_id, time_stamp, event, command, camera_image_path) VALUES (%s, %s, %s, %s, %s)"
         cursor.execute(query, log)
         self.conn.commit()
         cursor.close()
@@ -146,8 +146,8 @@ class Database:
 # )
 
 def main():
-
-    iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
+    #iot_db = Database("localhost", 3306, "root", "amrbase1", "iot_project")
+    #iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
     iot_db.connect()
 
     for i in range(10):
@@ -160,7 +160,8 @@ def main():
             sensor_data_id, event, command = iot_db.check_event(time_stamp, sensor_type, value)
 
             if event is not None:
-                log = (sensor_data_id, time_stamp, event, command)
+                camera_image_path = f"capture_data/{time_stamp}.jpg"
+                log = (sensor_data_id, time_stamp, event, command, camera_image_path)
                 iot_db.insert_event_log(log)
         time.sleep(1)
 
