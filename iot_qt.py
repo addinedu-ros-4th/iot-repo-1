@@ -10,10 +10,11 @@ import os
 import time
 import cv2
 import requests
-from io import BytesIO
+from io import BytesIO, StringIO
 import socket
 import json
 import pandas as pd
+
 
 class Camera(QThread):
     update = pyqtSignal(QImage)
@@ -140,8 +141,13 @@ class LoginScreen(QDialog):
         self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
         self.DisplaySensorLog()
 
-        #Table connect with QlineEdit(ex : tempval)
+        #Table connect with QlineEdit
         self.TempVal = self.findChild(QLineEdit, 'TempVal')
+        self.AirHumidVal = self.findChild(QLineEdit, 'AirHumidVal')
+        self.GroundHumidVal = self.findChild(QLineEdit, 'GroundHumidVal')
+        self.BrightVal = self.findChild(QLineEdit, 'BrightVal')
+        self.HeightVal = self.findChild(QLineEdit, 'HeightVal')
+
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
 
     #tablewidget with qlinedit
@@ -152,6 +158,23 @@ class LoginScreen(QDialog):
             temp_column_index = 1
             temp_value = self.tableWidget.item(row, temp_column_index).text()
             self.TempVal.setText(temp_value)
+
+            air_hum_column_index = 2
+            air_hum_value = self.tableWidget.item(row, air_hum_column_index).text()
+            self.AirHumidVal.setText(air_hum_value)
+
+            gnd_hum_column_index = 3
+            gnd_hum_value = self.tableWidget.item(row, gnd_hum_column_index).text()
+            self.GroundHumidVal.setText(gnd_hum_value)
+
+            bright_column_index = 4
+            bright_value = self.tableWidget.item(row, bright_column_index).text()
+            self.BrightVal.setText(bright_value)
+
+            # T.B.D(수수깡높이측정)
+            # height_column_index = 5
+            # height_value = self.tableWidget.item(row, height_column_index).text()
+            # self.HeightVal.setText(height_value)
 
     #connect table with DB (T.B.D)
     def DisplaySensorLog(self, selected_date=None):
@@ -249,7 +272,7 @@ class LoginScreen(QDialog):
         df = self.SendDateToServer(selected_date.toString("yyyy-MM-dd"))
         self.UpdateTableWidget(df)
 
-     # TableWidget update
+    # TableWidget update
     def UpdateTableWidget(self, df):
        
         self.tableWidget.setRowCount(len(df))
@@ -296,24 +319,33 @@ class LoginScreen(QDialog):
 
     #web socket commuincation with JSON file (qt --> server : 'selected_date' --> server )
     def SendDateToServer(self, date_str):
-        # making Json
+        # JSON 데이터 생성
         data = json.dumps({"selected_date": date_str})
 
-        # connect server
+        # 로컬 파일에 JSON 데이터 저장
+        with open("selected_date.json", "w") as file:
+            file.write(data)
+
+        # 서버에 연결
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect(("172.30.1.50", 8080))
 
-        # transmitte data to server
+        # 데이터 송신
         client_socket.sendall(data.encode('utf-8'))
 
-        # receive json from server
-        response = client_socket.recv(1024)
+        # 서버로부터 JSON 데이터 수신
+        response = client_socket.recv(9000)
         df_json = response.decode('utf-8')
 
-        # JSON --> Pd Df
-        df = pd.read_json(df_json, orient='records')
+        # 수신된 JSON 데이터로 DataFrame 생성
+        try:
+            s = StringIO(df_json)
+            df = pd.read_json(s, orient='records')
+        except ValueError as e:
+            print(f"JSON parsing error: {e}")
+            df = pd.DataFrame()
 
-        # save JSON
+        # 로컬 파일에 JSON 데이터 저장
         with open("client_data.json", "w") as file:
             file.write(df_json)
 
