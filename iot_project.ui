@@ -980,7 +980,7 @@
     <string>MIN</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="GroundHumidVal_2">
+  <widget class="QLineEdit" name="BrightVal">
    <property name="geometry">
     <rect>
      <x>320</x>
@@ -1021,7 +1021,7 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QLineEdit" name="BrightVal_2">
+  <widget class="QLineEdit" name="GroundHumidVal">
    <property name="geometry">
     <rect>
      <x>320</x>
