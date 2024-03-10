@@ -63,7 +63,7 @@ class Database:
         
     def insert_event_log(self, log):
         cursor = self.conn.cursor()
-        query = "INSERT INTO event_log (data_id, time_stamp, event, command) VALUES (%s, %s, %s, %s)"
+        query = "INSERT INTO event_log (data_id, time_stamp, event, command, camera_image_path) VALUES (%s, %s, %s, %s, %s)"
         cursor.execute(query, log)
         self.conn.commit()
         cursor.close()
@@ -115,6 +115,13 @@ class Database:
             else:
                 event = None
                 command = None
+        elif sensor_type == sensor_type_list[5]:
+            if value > 7:
+                event = "성장"
+                command = event_command_dict[event]
+            else:
+                event = None
+                command = None
         else:
             event = None
             command = None
@@ -125,11 +132,12 @@ class Database:
     def watch_log(self, selected_date):
         cursor = self.conn.cursor()
         query = """
-        select substring(e.time_stamp, 12, 8) as "시간", 
-            max(case when s.sensor_type = '온도' then s.value end) as `온도`,
-            max(case when s.sensor_type = '습도' then s.value end) as `대기습도`,
-            max(case when s.sensor_type = '토양 수분' then s.value end) as `토양수분`, 
-            max(case when s.sensor_type = '조도' then s.value end) as `밝기`
+        select substring(e.time_stamp, 12, 8) as "time_stamp", 
+            max(case when s.sensor_type = '온도' then s.value end) as `Temp`,
+            max(case when s.sensor_type = '습도' then s.value end) as `AirHum`,
+            max(case when s.sensor_type = '토양 수분' then s.value end) as `GndHum`, 
+            max(case when s.sensor_type = '조도' then s.value end) as `Bright`,
+            max(case when s.sensor_type = '초음파' then s.value end) as `Growth`
         from event_log e
         join sensor_data s on e.time_stamp = s.time_stamp
         where date(e.time_stamp) = %s
@@ -142,8 +150,9 @@ class Database:
 
 def main():
 
-    # iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
+    # iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "****", "iot_project")
     iot_db = Database("localhost", 3306, "root", "amrbase1", "iot_project")
+
 
     iot_db.connect()
 
@@ -157,7 +166,8 @@ def main():
             sensor_data_id, event, command = iot_db.check_event(time_stamp, sensor_type, value)
 
             if event is not None:
-                log = (sensor_data_id, time_stamp, event, command)
+                camera_image_path = f"capture_data/{time_stamp}.jpg"
+                log = (sensor_data_id, time_stamp, event, command, camera_image_path)
                 iot_db.insert_event_log(log)
         time.sleep(1)
     selected_date = "2024-03-09"
