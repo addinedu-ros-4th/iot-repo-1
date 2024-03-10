@@ -7,12 +7,14 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from iot_database import Database
 import os
-
-
 import time
 import cv2
 import requests
-from io import BytesIO
+from io import BytesIO, StringIO
+import socket
+import json
+import pandas as pd
+
 
 class Camera(QThread):
     update = pyqtSignal(QImage)
@@ -139,6 +141,41 @@ class LoginScreen(QDialog):
         self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
         self.DisplaySensorLog()
 
+        #Table connect with QlineEdit
+        self.TempVal = self.findChild(QLineEdit, 'TempVal')
+        self.AirHumidVal = self.findChild(QLineEdit, 'AirHumidVal')
+        self.GroundHumidVal = self.findChild(QLineEdit, 'GroundHumidVal')
+        self.BrightVal = self.findChild(QLineEdit, 'BrightVal')
+        self.HeightVal = self.findChild(QLineEdit, 'HeightVal')
+
+        self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
+
+    #tablewidget with qlinedit
+    def onTableWidgetCellClicked(self, row, column):
+        time_column_index = 0
+
+        if column == time_column_index:
+            temp_column_index = 1
+            temp_value = self.tableWidget.item(row, temp_column_index).text()
+            self.TempVal.setText(temp_value)
+
+            air_hum_column_index = 2
+            air_hum_value = self.tableWidget.item(row, air_hum_column_index).text()
+            self.AirHumidVal.setText(air_hum_value)
+
+            gnd_hum_column_index = 3
+            gnd_hum_value = self.tableWidget.item(row, gnd_hum_column_index).text()
+            self.GroundHumidVal.setText(gnd_hum_value)
+
+            bright_column_index = 4
+            bright_value = self.tableWidget.item(row, bright_column_index).text()
+            self.BrightVal.setText(bright_value)
+
+            # T.B.D(수수깡높이측정)
+            # height_column_index = 5
+            # height_value = self.tableWidget.item(row, height_column_index).text()
+            # self.HeightVal.setText(height_value)
+
     #connect table with DB (T.B.D)
     def DisplaySensorLog(self, selected_date=None):
         if selected_date is None:
@@ -231,7 +268,20 @@ class LoginScreen(QDialog):
     def onDateSelected(self):
         selected_date = self.calender.selectedDate()
         self.DateField.setText(selected_date.toString("yyyy-MM-dd"))
-        self.DisplaySensorLog(selected_date)
+
+        df = self.SendDateToServer(selected_date.toString("yyyy-MM-dd"))
+        self.UpdateTableWidget(df)
+
+    # TableWidget update
+    def UpdateTableWidget(self, df):
+       
+        self.tableWidget.setRowCount(len(df))
+        self.tableWidget.setColumnCount(len(df.columns))
+        self.tableWidget.setHorizontalHeaderLabels(df.columns)
+
+        for row in range(len(df)):
+            for col in range(len(df.columns)):
+                self.tableWidget.setItem(row, col, QTableWidgetItem(str(df.iloc[row, col])))
 
     #png upload
     def displayImageOnLabel(self, imagePath, labelWidget):
@@ -267,6 +317,41 @@ class LoginScreen(QDialog):
 
         return QIcon(pixmap)
 
+    #web socket commuincation with JSON file (qt --> server : 'selected_date' --> server )
+    def SendDateToServer(self, date_str):
+        # making JSON data
+        data = json.dumps({"selected_date": date_str})
+
+        # saving JSON : date info
+        with open("selected_date.json", "w") as file:
+            file.write(data)
+
+        # connect server
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect(("172.30.1.50", 8080))
+
+        # transmitte data
+        client_socket.sendall(data.encode('utf-8'))
+
+        # receive data from server
+        response = client_socket.recv(9000)
+        df_json = response.decode('utf-8')
+
+        # json to pandas.df
+        try:
+            s = StringIO(df_json)
+            df = pd.read_json(s, orient='records')
+        except ValueError as e:
+            print(f"JSON parsing error: {e}")
+            df = pd.DataFrame()
+
+        # json data saving
+        with open("client_data.json", "w") as file:
+            file.write(df_json)
+
+        client_socket.close()
+
+        return df
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
