@@ -176,7 +176,6 @@ if(h > 60){
  digitalWrite(A_2B, LOW);
  }
 else{
-//  Serial.print(humi);
  servo.write(175.0); 
  digitalWrite(B_1A, LOW); // 값을 변화(0~255)시키면서 팬의 세기를 설정
  digitalWrite(B_1B, LOW);     
