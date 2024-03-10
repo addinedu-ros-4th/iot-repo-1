@@ -3,14 +3,11 @@
 #include <DHT.h> // 온습도센서를 사용하기 위한 라이브러리 추가
 #define DHTPIN 4 // 온습도센서 데이터단자 연결 핀번호
 #define DHTTYPE DHT11 // DHT11 센서일 경우 DHT11 , DHT22 센서일 경우 DHT22
-#define A_1A 9 // 모터드라이버 A_1A 단자 연결 핀번호(워터모터1용)
+#define A_1A 9 // 모터드라이버 A_1A 단자 연결 핀번호(워터모터용)
 #define A_1B 10 // 모터드라이버 A_1B 단자 연결 핀번호
-#define A_2A 11 // 모터드라이버 A_1A 단자 연결 핀번호(워터모터1용)
-#define A_2B 12 // 모터드라이버 A_1B 단자 연결 핀번호
 #define B_1A 5 // 모터드라이버 A_1A 단자 연결 핀번호 (미니모터용)
 #define B_1B 6 // 모터드라이버 A_1B 단자 연결 핀번호
 #define SOIL_HUMI A0
-#define SOIL_HUMI2 A2
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // LCD I2C 통신 설정(주소, 글자수, 줄수)
 DHT dht(DHTPIN, DHTTYPE); // 온습도센서 사용 설정
@@ -18,7 +15,6 @@ DHT dht(DHTPIN, DHTTYPE); // 온습도센서 사용 설정
 int cds_pin = A1; // 조도센서에 사용할 핀번호
 int cds_ledpin=3; // LED에 사용할 핀번호
 int soil, psoil;  // 수분센서 값을 사용하기 위한 변수 선언
-int soil2, psoil2; 
 int val, ledval, pledval; // 조도센서 값을 사용하기 위한 변수 선언
 
 void setup() { 
@@ -38,10 +34,6 @@ void setup() {
  pinMode(A_1B, OUTPUT);  
  digitalWrite(A_1A, LOW); // 모터드라이브 초기값은 끈 상태
  digitalWrite(A_1B, LOW);
- pinMode(A_2A, OUTPUT); // 모터드라이브 출력모드
- pinMode(A_1B, OUTPUT);  
- digitalWrite(A_2A, LOW); // 모터드라이브 초기값은 끈 상태
- digitalWrite(A_1B, LOW); 
  pinMode(B_1A, OUTPUT);
  pinMode(B_1B, OUTPUT);  
  digitalWrite(B_1A, LOW);
@@ -57,8 +49,6 @@ void loop() {
   }
  soil = analogRead(SOIL_HUMI); // A0에서 읽은 값을 soil 변수에 저장
  psoil = map(soil, 1023, 0, 0, 100); // map함수를 사용하여 soil값을 1~100으로 변환한 값을 psoil에 저장
- soil2 = analogRead(SOIL_HUMI2); // A0에서 읽은 값을 soil 변수에 저장
- psoil2 = map(soil2, 1023, 0, 0, 100); // map함수를 사용하여 soil값을 1~100으로 변환한 값을 psoil에 저장 
  val = analogRead(cds_pin); // A1에서 읽은 값을 val 변수에 저장
  ledval = map(val,0, 1023, 250, 0); // map함수를 사용하여 val값을 1~250으로 변환한 값을 ledval에 저장
  pledval = ledval*0.4; // 조도센서값을 0~100으로 표시하기 위한 설정
@@ -67,11 +57,8 @@ void loop() {
  lcd.backlight(); // 배경화면 빛이 들어오도록 설정 
  lcd.display(); // 내용을 표시
  lcd.setCursor(0,0);
- lcd.print("M1: ");
+ lcd.print("M: ");
  lcd.print(psoil);
- lcd.print("%");
- lcd.print("M2: ");
- lcd.print(psoil2);
  lcd.print("%");
  lcd.setCursor(8,0);
  lcd.print("D: ");
@@ -85,18 +72,16 @@ void loop() {
  lcd.print("H: ");
  lcd.print(h,0);  
  lcd.print("%");
- Serial.print("화분1 수분량: ");
+ Serial.print("수분량: ");
  Serial.print(psoil);
- Serial.print("  화분2 수분량: ");
- Serial.print(psoil2); 
  Serial.print("  조도: ");
  Serial.print(pledval);
  Serial.print("  온도: ");
- Serial.print(t);
- Serial.print("  습도: ");
- Serial.print(h);
- Serial.println();
- delay(1000); 
+  Serial.print(t);
+  Serial.print("  습도: ");
+  Serial.print(h);
+  Serial.println();
+  delay(1000); 
 
 if(psoil < 20) { // 토양수분값이 20미만이면
  analogWrite(A_1A, 220); // 값을 변화(0~255)시키면서 호스에서 나오는 물의 양을 적정하게 설정
@@ -106,38 +91,14 @@ if(psoil < 20) { // 토양수분값이 20미만이면
  digitalWrite(A_1B, LOW);
  digitalWrite(B_1A, LOW); // 워터펌프가 동작하는 동안 미니모터는 중지, 미니모터와 워터펌프가 동시 작동 시 전압 부족 현상 막음 
  digitalWrite(B_1B, LOW);
- digitalWrite(A_2A, LOW);
- digitalWrite(A_2B, LOW);
  }
  else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
  digitalWrite(A_1A, LOW);
  digitalWrite(A_1B, LOW);
- digitalWrite(A_2A, LOW);
- digitalWrite(A_2B, LOW); 
 } 
  delay(1000);
-
-if(psoil2 < 20) { // 토양수분값이 20미만이면
- analogWrite(A_2A, 220); // 값을 변화(0~255)시키면서 호스에서 나오는 물의 양을 적정하게 설정
- digitalWrite(A_2B, LOW);
- delay(5000);
- digitalWrite(A_2A, LOW); // 워터펌프 중단
- digitalWrite(A_2B, LOW);
- digitalWrite(A_1A, LOW);
- digitalWrite(A_1B, LOW);
- digitalWrite(B_1A, LOW); // 워터펌프가 동작하는 동안 미니모터는 중지, 미니모터와 워터펌프가 동시 작동 시 전압 부족 현상 막음 
- digitalWrite(B_1B, LOW);
- }
- else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
- digitalWrite(A_1A, LOW);
- digitalWrite(A_1B, LOW); 
- digitalWrite(A_2A, LOW);
- digitalWrite(A_2B, LOW);
-} 
- delay(1000); 
-
  
-if(t >= 20 || h >= 50) { // 온도가 20이상 또는 습도가 50이상이면,  || => [Shift] + [\]
+if(t >= 22 || h >= 70) { // 온도가 30이상 또는 습도가 80이상이면,  || => [Shift] + [\]
 delay(5000);
  analogWrite(B_1A, 200); // 값을 변화(0~255)시키면서 팬의 세기를 설정
  digitalWrite(B_1B, LOW);
@@ -146,8 +107,6 @@ delay(5000);
  digitalWrite(B_1B, LOW);
  digitalWrite(A_1A, LOW);// 미니모터가 동작하는 동안 워터펌프는 중지, 미니모터와 워터펌프가 동시 작동 시 전압 부족 현상 막음 
  digitalWrite(A_1B, LOW);
- digitalWrite(A_2A, LOW); 
- digitalWrite(A_2B, LOW); 
 } 
 else{ // 그 외 온습도 측정값이면 미니모터를 꺼라
  digitalWrite(B_1A, LOW);
@@ -155,7 +114,7 @@ else{ // 그 외 온습도 측정값이면 미니모터를 꺼라
 }
  delay(1000);
  
- if (pledval > 0) { // 조도센서값이 60이 넘으면
+ if (pledval >60) { // 조도센서값이 60이 넘으면
   analogWrite(cds_ledpin, ledval);  // LED는 조도센서 값의 밝기로 켜라 
  } 
   else{  // 그 외 조도센서값이면 LED를 꺼라
