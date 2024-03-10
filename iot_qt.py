@@ -7,12 +7,13 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from iot_database import Database
 import os
-
-
 import time
 import cv2
 import requests
 from io import BytesIO
+import socket
+import json
+import pandas as pd
 
 class Camera(QThread):
     update = pyqtSignal(QImage)
@@ -143,12 +144,11 @@ class LoginScreen(QDialog):
         self.TempVal = self.findChild(QLineEdit, 'TempVal')
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
 
+    #tablewidget with qlinedit
     def onTableWidgetCellClicked(self, row, column):
-        # '시간' 열의 인덱스를 확인하고 조정하세요. 여기서는 예시로 0을 사용합니다.
         time_column_index = 0
 
         if column == time_column_index:
-            # '온도' 열의 값을 가져옵니다. '온도' 열의 정확한 인덱스를 설정하세요.
             temp_column_index = 1
             temp_value = self.tableWidget.item(row, temp_column_index).text()
             self.TempVal.setText(temp_value)
@@ -245,7 +245,20 @@ class LoginScreen(QDialog):
     def onDateSelected(self):
         selected_date = self.calender.selectedDate()
         self.DateField.setText(selected_date.toString("yyyy-MM-dd"))
-        self.DisplaySensorLog(selected_date)
+
+        df = self.SendDateToServer(selected_date.toString("yyyy-MM-dd"))
+        self.UpdateTableWidget(df)
+
+     # TableWidget update
+    def UpdateTableWidget(self, df):
+       
+        self.tableWidget.setRowCount(len(df))
+        self.tableWidget.setColumnCount(len(df.columns))
+        self.tableWidget.setHorizontalHeaderLabels(df.columns)
+
+        for row in range(len(df)):
+            for col in range(len(df.columns)):
+                self.tableWidget.setItem(row, col, QTableWidgetItem(str(df.iloc[row, col])))
 
     #png upload
     def displayImageOnLabel(self, imagePath, labelWidget):
@@ -281,6 +294,32 @@ class LoginScreen(QDialog):
 
         return QIcon(pixmap)
 
+    #web socket commuincation with JSON file (qt --> server : 'selected_date' --> server )
+    def SendDateToServer(self, date_str):
+        # making Json
+        data = json.dumps({"selected_date": date_str})
+
+        # connect server
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect(("172.30.1.50", 8080))
+
+        # transmitte data to server
+        client_socket.sendall(data.encode('utf-8'))
+
+        # receive json from server
+        response = client_socket.recv(1024)
+        df_json = response.decode('utf-8')
+
+        # JSON --> Pd Df
+        df = pd.read_json(df_json, orient='records')
+
+        # save JSON
+        with open("client_data.json", "w") as file:
+            file.write(df_json)
+
+        client_socket.close()
+
+        return df
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
