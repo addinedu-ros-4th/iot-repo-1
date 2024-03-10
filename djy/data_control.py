@@ -55,7 +55,7 @@ def process_sensor_data_from_esp(data_str):
     print(f"Received data from ESP32: {data_str}")
 
 def start_server():
-    host = '172.30.1.50'
+    host = '172.30.1.9'
     port = 8080
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
