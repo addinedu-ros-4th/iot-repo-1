@@ -139,6 +139,20 @@ class LoginScreen(QDialog):
         self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
         self.DisplaySensorLog()
 
+        #Table connect with QlineEdit(ex : tempval)
+        self.TempVal = self.findChild(QLineEdit, 'TempVal')
+        self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
+
+    def onTableWidgetCellClicked(self, row, column):
+        # '시간' 열의 인덱스를 확인하고 조정하세요. 여기서는 예시로 0을 사용합니다.
+        time_column_index = 0
+
+        if column == time_column_index:
+            # '온도' 열의 값을 가져옵니다. '온도' 열의 정확한 인덱스를 설정하세요.
+            temp_column_index = 1
+            temp_value = self.tableWidget.item(row, temp_column_index).text()
+            self.TempVal.setText(temp_value)
+
     #connect table with DB (T.B.D)
     def DisplaySensorLog(self, selected_date=None):
         if selected_date is None:
