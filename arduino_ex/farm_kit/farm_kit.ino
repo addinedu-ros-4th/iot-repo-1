@@ -85,9 +85,9 @@ void loop() {
  lcd.print("H: ");
  lcd.print(h,0);  
  lcd.print("%");
- Serial.print("화분 1 수분량: ");
+ Serial.print("화분1 수분량: ");
  Serial.print(psoil);
- Serial.print("화분 2 수분량: ");
+ Serial.print("  화분2 수분량: ");
  Serial.print(psoil2); 
  Serial.print("  조도: ");
  Serial.print(pledval);
