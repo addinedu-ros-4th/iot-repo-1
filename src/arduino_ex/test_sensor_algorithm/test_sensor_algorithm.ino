@@ -6,12 +6,16 @@
 #define SOIL_HUMI2 A2
 #define TANK_WATER A3
 #define HUMI_WATER A4
+#define A_1A 9 // 모터드라이버 A_1A 단자 연결 핀번호(워터모터1용)
+#define A_1B 10 // 모터드라이버 A_1B 단자 연결 핀번호
+#define A_2A 11 // 모터드라이버 A_1A 단자 연결 핀번호(워터모터1용)
+#define A_2B 12 // 모터드라이버 A_1B 단자 연결 핀번호
 
 DHT dht(DHTPIN, DHTTYPE); // 온습도센서 사용 설정
 
 int cds_pin = A1; // 조도센서에 사용할 핀번호
 int echo = 8; // 초음파센서
-int trig = 12; // 초음파센서
+int trig = 13; // 초음파센서
 int soil1, psoil1;  // 수분센서 값을 사용하기 위한 변수 선언
 int soil2, psoil2; 
 int val, ledval, pledval; // 조도센서 값을 사용하기 위한 변수 선언
@@ -24,6 +28,14 @@ void setup() {
  pinMode(echo, INPUT);
  dht.begin(); // 온습도센서 작동
  pinMode(ledpin, OUTPUT); //LED 
+ pinMode(A_1A, OUTPUT); // 모터드라이브 출력모드
+ pinMode(A_1B, OUTPUT);  
+ digitalWrite(A_1A, LOW); // 모터드라이브 초기값은 끈 상태
+ digitalWrite(A_1B, LOW);
+ pinMode(A_2A, OUTPUT); // 모터드라이브 출력모드
+ pinMode(A_2B, OUTPUT);  
+ digitalWrite(A_2A, LOW); // 모터드라이브 초기값은 끈 상태
+ digitalWrite(A_2B, LOW); 
 }
 void loop() {  
  // 온 습도 센서
@@ -51,10 +63,11 @@ void loop() {
  cycletime = pulseIn(echo, HIGH); 
  distance = ((340 * cycletime) / 10000) / 2;  
 
- // 물탱크 물 수위
+ // 물탱크, 가습기 물 수위
  int tank = analogRead(TANK_WATER); 
  int humi = analogRead(HUMI_WATER);
 
+ // moniter print
  Serial.println();
  Serial.print("===================================");
  Serial.println();
@@ -88,6 +101,41 @@ void loop() {
   else{  // 그 외 조도센서값이면 LED를 꺼라
   analogWrite(ledpin, LOW);    
  }
+
+if(psoil1 < 20) { // 토양수분값이 20미만이면
+ analogWrite(A_1A, 220); // 값을 변화(0~255)시키면서 호스에서 나오는 물의 양을 적정하게 설정
+ digitalWrite(A_1B, LOW);
+ delay(5000);
+ Serial.println("화분1 물공급!");
+ digitalWrite(A_1A, LOW); // 워터펌프 중단
+ digitalWrite(A_1B, LOW);
+ digitalWrite(A_2A, LOW);
+ digitalWrite(A_2B, LOW);
+ }
+ else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
+ digitalWrite(A_1A, LOW);
+ digitalWrite(A_1B, LOW);
+ digitalWrite(A_2A, LOW);
+ digitalWrite(A_2B, LOW); 
+} 
+ delay(1000);
+
+if(psoil2 < 20) { // 토양수분값이 20미만이면
+ analogWrite(A_2A, 220); // 값을 변화(0~255)시키면서 호스에서 나오는 물의 양을 적정하게 설정
+ digitalWrite(A_2B, LOW);
+ delay(5000);
+ Serial.println("화분2 물공급!"); 
+ digitalWrite(A_2A, LOW); // 워터펌프 중단
+ digitalWrite(A_2B, LOW);
+ digitalWrite(A_1A, LOW);
+ digitalWrite(A_1B, LOW);
+ }
+ else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
+ digitalWrite(A_1A, LOW);
+ digitalWrite(A_1B, LOW); 
+ digitalWrite(A_2A, LOW);
+ digitalWrite(A_2B, LOW);
+} 
+
  delay(2000); 
- 
 }
