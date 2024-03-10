@@ -1,3 +1,4 @@
+import socket
 from iot_database import Database
 
 import socket
@@ -22,9 +23,6 @@ def handle_client(client_socket):
                 # if not JSON, ESP32 data
                 process_sensor_data_from_esp(data.decode('utf-8'))
 
-            except ConnectionResetError:
-                print("Client disconnected unexpectedly.")
-
     finally:
         client_socket.close()
 
@@ -33,12 +31,6 @@ def process_db_query(data_dict, client_socket):
     iot_db.connect()
     df = iot_db.watch_log(data_dict["selected_date"])
     df_json = df.to_json(orient='records')
-
-    if df.empty:
-        # 데이터가 없으면 빈 DataFrame을 JSON 형태로 변환
-        df_json = df.to_json(orient='records')
-    else:
-        df_json = df.to_json(orient='records')
 
     with open("server_data.json", "w") as file:
         file.write(df_json)
