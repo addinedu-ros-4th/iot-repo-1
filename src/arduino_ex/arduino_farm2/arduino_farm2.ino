@@ -4,8 +4,8 @@
 #define SOIL_HUMI2 A2
 #define TANK_WATER A3
 #define HUMI_WATER A4
-#define A_2A 11 // 모터드라이버 A_2A 단자 연결 핀번호(워터모터2용)
-#define A_2B 12 // 모터드라이버 A_2B 단자 연결 핀번호
+#define B_1A 11 // 모터드라이버 B_1A 단자 연결 핀번호(워터모터2용)
+#define B_2B 12 // 모터드라이버 B_2B 단자 연결 핀번호
 
 
 Servo servo;      //Servo 클래스로 servo객체 생성
@@ -22,10 +22,10 @@ void setup() {
  pinMode(trig2, OUTPUT);
  pinMode(echo2, INPUT);
  pinMode(ledpin, OUTPUT); //LED 
- pinMode(A_2A, OUTPUT); // 모터드라이브 출력모드
- pinMode(A_2B, OUTPUT);  
- digitalWrite(A_2A, LOW); // 모터드라이브 초기값은 끈 상태
- digitalWrite(A_2B, LOW); 
+ pinMode(B_1A, OUTPUT); // 모터드라이브 출력모드
+ pinMode(B_2B, OUTPUT);  
+ digitalWrite(B_1A, LOW); // 모터드라이브 초기값은 끈 상태
+ digitalWrite(B_2B, LOW); 
 }
 void loop() {  
  soil_humi2 = analogRead(SOIL_HUMI2); 
@@ -58,7 +58,7 @@ void loop() {
  Serial.println();
  Serial.print("조도: ");
  Serial.print(pledval);
- Serial.print("식물과 거리: ");
+ Serial.print("   식물과 거리: ");
  Serial.print(distance);
  Serial.println("cm");
  Serial.print("물탱크 수위: ");
@@ -67,7 +67,7 @@ void loop() {
  Serial.print(humi);
  Serial.println();
 
- if (pledval > 60) { // 조도센서값이 60이 넘으면
+ if (pledval > 20) { // 조도센서값이 60이 넘으면
   analogWrite(ledpin, pledval);  // LED는 조도센서 값의 밝기로 켜라 
   } 
  else{  // 그 외 조도센서값이면 LED를 꺼라
@@ -75,16 +75,16 @@ void loop() {
   }
  
  if(psoil_humi2 < 20) { // 토양수분값이 20미만이면
-  analogWrite(A_2A, 220); // 값을 변화(0~255)시키면서 호스에서 나오는 물의 양을 적정하게 설정
-  digitalWrite(A_2B, LOW);
+  analogWrite(B_1A, 220); // 값을 변화(0~255)시키면서 호스에서 나오는 물의 양을 적정하게 설정
+  digitalWrite(B_2B, LOW);
   delay(5000);
   Serial.println("화분2 물공급!"); 
-  digitalWrite(A_2A, LOW); // 워터펌프 중단
-  digitalWrite(A_2B, LOW);
+  digitalWrite(B_1A, LOW); // 워터펌프 중단
+  digitalWrite(B_2B, LOW);
   }
  else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
-  digitalWrite(A_2A, LOW);
-  digitalWrite(A_2B, LOW);
+  digitalWrite(B_1A, LOW);
+  digitalWrite(B_2B, LOW);
   } 
 
  delay(2000); 
