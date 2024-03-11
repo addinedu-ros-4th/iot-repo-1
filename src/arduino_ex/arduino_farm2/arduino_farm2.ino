@@ -48,5 +48,16 @@ void loop() {
  int tank = analogRead(TANK_WATER); 
  int humi = analogRead(HUMI_WATER);
 
+ // 보내는 센서값 (토양습도2, 거리2, 조도, 탱크수위, 가습기 수위)
+ StaticJsonDocument<200> sending_doc;
+ sending_doc["psoil_humi2"]  = psoil_humi2;
+ sending_doc["distance2"]  = distance2;
+ sending_doc["pledval"]  = pledval;
+ sending_doc["tank_wlevel"]  = tank_wlevel;
+ sending_doc["humi_wlevel"]  = humi_wlevel;  
+
+ serializeJson(sending_doc, Serial);
+ Serial.println();
+
  delay(100);
 }
