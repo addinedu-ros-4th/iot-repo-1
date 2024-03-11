@@ -85,8 +85,6 @@ class Server:
 
     def process_sensor_data_from_esp(self, data_str):
         print(f"Received data from ESP32: {data_str}")
-
-    def send_to_esp32(self,process_code):
         esp32_ip = '192.168.0.39'
         esp32_port = 8080
         # 소켓 생성
@@ -101,73 +99,53 @@ class Server:
         # 소켓 닫기
         client_socket.close()
 
-    
 
-    def qt_request_to_db(self):
+    def qt_request_to_db(self,client_socket):
         #ex) date sensor data
+        data = client_socket.recv(1024).decode()
         self.db.connect()
-        pass
+        client_socket.close()
 
-    def qt_request_to_adu(self):
-        #ex) error message
 
-        # 소켓 생성
-
-        try:
-            # 서버에 연결
-
-            # 데이터를 받을 버퍼 크기 설정
-            buffer_size = 1024
-
-            # 데이터 받기
-            received_data = self.server_socket.recv(buffer_size)
-
-            # 받은 데이터 출력
-            print("Received data:", received_data.decode())
-            self.ser.write(received_data)
-
-        finally:
-                # 소켓 닫기
-            server_socket.close()
-        pass
+    def qt_request_to_adu(self,client_socket):
+        data = client_socket.recv(1024).decode()
+        self.ser.write(data)
+        
     
     def db_send_to_qt(self):
         self.db.watch_log()
 
-    
-    def adu_send_to_db(self):
-        self.db.connect()
-        
-        pass
-
-
-    def adu_send_to_qt(self):
+    def process_adu_data(self):
         if self.ser.in_waiting > 0:
             line = self.ser.readline().decode('utf-8').rstrip()  # 시리얼 포트에서 한 줄 읽기
             try:
                 data = json.loads(line)  # JSON 문자열을 파이썬 딕셔너리로 변환
+                return data
+                
                 # 받은 데이터 출력
-                print("Temperature:", data["temperature"])
-                print("Humidity:", data["humidity"])
-                print("Soil Moisture 1:", data["soil_1"])
-                print("Soil Moisture 2:", data["soil_2"])
-                print("Light Level:", data["led"])
-                print("Distance:", data["distance"])
-                print("Tank Water Level:", data["tank"])
-                print("Humidity Water Level:", data["humi"])
-                self.temperature = data["temperature"]
-                self.humidity = data["humidity"]
-                self.soil_1 = data["soil_1"]
-                self.soil_2 = data["soil_2"]
-                self.led = data["led"]
-                self.distance = data["distance"]
-                self.tank = data["tank"]
-                self.humi = data["humi"]
+               
                 
             except json.JSONDecodeError:
-                print("JSON decode error:", line)
-            
-        pass
+                print("JSON decode error:", line)    
+                
+    def adu_send_to_db(self):
+        self.db.connect()
+        data = self.process_adu_data()
+        self.temperature = data["temperature"]
+        self.humidity = data["humidity"]
+        self.soil_1 = data["soil_1"]
+        self.soil_2 = data["soil_2"]
+        self.led = data["led"]
+        self.distance = data["distance"]
+        self.tank = data["tank"]
+        self.humi = data["humi"]
+        
+        
+
+
+    def adu_send_to_qt(self):
+        data = self.process_adu_data()
+        
 
 
 
@@ -182,8 +160,9 @@ class Server:
             client_socket, addr = server_socket.accept()
             print(f"Connection from {addr}")
             client_thread_qt = threading.Thread(target=self.qt_client, args=(client_socket,))
-            client_thread_qt.start()
             client_thread_adu= threading.Thread(target=self.adu_client, args=(client_socket,))
+
+            client_thread_qt.start()
             client_thread_adu.start()
 
 
