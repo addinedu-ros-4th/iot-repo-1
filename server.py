@@ -6,6 +6,8 @@ import subprocess
 import re
 import iot_qt as iqt
 import multiprocessing
+import serial
+
 
 
 def get_ip_address(interface):
@@ -30,11 +32,18 @@ class Server:
     def __init__(self, port):
         self.host = get_ip_address("wlo1")
         self.port = port
+        self.ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # 포트 번호는 시스템에 따라 달라질 수 있음
+        self.db = idb.Database("localhost", 3306, "root", "amrbase1", "iot_project")
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((self.host, self.port))
+        server_socket.listen(5)
+        print(f"Server is listening on {self.host}:{self.port}")
 
-    def handle_client(self, client_socket):
+
+    def qt_client(self, qt_socket):
         try:
             while True:
-                data = client_socket.recv(1024)
+                data = qt_socket.recv(1024)
                 if not data:
                     break
 
@@ -42,7 +51,7 @@ class Server:
                     data_dict = json.loads(data.decode('utf-8'))
 
                     if "selected_date" in data_dict:  # Qt data
-                        self.process_db_query(data_dict, client_socket)
+                        self.process_db_query(data_dict, qt_socket)
 
                     else:
                         # if not JSON, ESP32 data
@@ -51,7 +60,13 @@ class Server:
                     print(e)
 
         finally:
-            client_socket.close()
+            qt_socket.close()
+
+
+    def adu_client(self,adu_socket):
+        pass
+
+
 
     def process_db_query(self, data_dict, client_socket):
         iot_db = idb.Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
@@ -86,23 +101,77 @@ class Server:
         # 소켓 닫기
         client_socket.close()
 
-    def send_to_db(self):
+    
+
+    def qt_request_to_db(self):
+        #ex) date sensor data
+        self.db.connect()
         pass
 
-    def request_from_db(self):
+    def qt_request_to_adu(self):
+        #ex) error message
+        server_address = ('localhost', 8080)
+
+        # 소켓 생성
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            # 서버에 연결
+            sock.connect(server_address)
+
+            # 데이터를 받을 버퍼 크기 설정
+            buffer_size = 1024
+
+            # 데이터 받기
+            received_data = sock.recv(buffer_size)
+
+            # 받은 데이터 출력
+            print("Received data:", received_data.decode())
+
+        finally:
+                # 소켓 닫기
+            sock.close()
+        pass
+    
+    def db_send_to_qt(self):
+        self.db.watch_log()
+
+    
+    def adu_send_to_db(self):
+        self.db.connect()
+        
         pass
 
-    def send_to_qt(self):
+
+    def adu_send_to_qt(self):
+        if self.ser.in_waiting > 0:
+            line = self.ser.readline().decode('utf-8').rstrip()  # 시리얼 포트에서 한 줄 읽기
+            try:
+                data = json.loads(line)  # JSON 문자열을 파이썬 딕셔너리로 변환
+                # 받은 데이터 출력
+                print("Temperature:", data["temperature"])
+                print("Humidity:", data["humidity"])
+                print("Soil Moisture 1:", data["soil_1"])
+                print("Soil Moisture 2:", data["soil_2"])
+                print("Light Level:", data["led"])
+                print("Distance:", data["distance"])
+                print("Tank Water Level:", data["tank"])
+                print("Humidity Water Level:", data["humi"])
+                self.temperature = data["temperature"]
+                self.humidity = data["humidity"]
+                self.soil_1 = data["soil_1"]
+                self.soil_2 = data["soil_2"]
+                self.led = data["led"]
+                self.distance = data["distance"]
+                self.tank = data["tank"]
+                self.humi = data["humi"]
+                
+            except json.JSONDecodeError:
+                print("JSON decode error:", line)
+            
         pass
 
-    def request_from_qt(self):
-        pass
 
-    def send_to_adu(self):
-        pass
-
-    def request_to_adu(self):
-        pass
 
 
     def start_server(self):
@@ -114,8 +183,11 @@ class Server:
         while True:
             client_socket, addr = server_socket.accept()
             print(f"Connection from {addr}")
-            client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
-            client_thread.start()
+            client_thread_qt = threading.Thread(target=self.qt_client, args=(client_socket,))
+            client_thread_qt.start()
+            client_thread_adu= threading.Thread(target=self.adu_client, args=(client_socket,))
+            client_thread_adu.start()
+
 
     
 if __name__ == "__main__":
