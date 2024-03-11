@@ -7,10 +7,9 @@
 #define B_1A 11 // 모터드라이버 B_1A 단자 연결 핀번호(워터모터2용)
 #define B_2B 12 // 모터드라이버 B_2B 단자 연결 핀번호
 
-
 Servo servo;      //Servo 클래스로 servo객체 생성
 int cds_pin = A1; // 조도센서에 사용할 핀번호
-int echo2 = 8; // 초음파센서2
+int echo2 = 8; // 초음파센서2 
 int trig2 = 13; // 초음파센서2
 int soil_humi2, psoil_humi2; 
 int val, ledval, pledval; // 조도센서 값을 사용하기 위한 변수 선언
@@ -48,24 +47,6 @@ void loop() {
  int tank = analogRead(TANK_WATER); 
  int humi = analogRead(HUMI_WATER);
 
- // moniter print
- Serial.println();
- Serial.print("===================================");
- Serial.println();
- Serial.print("화분 2 수분량: ");
- Serial.print(psoil_humi2); 
- Serial.println();
- Serial.println();
- Serial.print("조도: ");
- Serial.print(pledval);
- Serial.print("   식물과 거리: ");
- Serial.print(distance);
- Serial.println("cm");
- Serial.print("물탱크 수위: ");
- Serial.print(tank);
- Serial.print("  가습기 수위: ");
- Serial.print(humi);
- Serial.println();
 
  if (pledval > 20) { // 조도센서값이 60이 넘으면
   analogWrite(ledpin, pledval);  // LED는 조도센서 값의 밝기로 켜라 
