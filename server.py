@@ -124,6 +124,7 @@ class Server:
 
             # 받은 데이터 출력
             print("Received data:", received_data.decode())
+            self.ser.write(received_data)
 
         finally:
                 # 소켓 닫기
