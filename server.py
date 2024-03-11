@@ -34,9 +34,9 @@ class Server:
         self.port = port
         self.ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # 포트 번호는 시스템에 따라 달라질 수 있음
         self.db = idb.Database("localhost", 3306, "root", "amrbase1", "iot_project")
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.bind((self.host, self.port))
-        server_socket.listen(5)
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(5)
         print(f"Server is listening on {self.host}:{self.port}")
 
 
@@ -110,27 +110,24 @@ class Server:
 
     def qt_request_to_adu(self):
         #ex) error message
-        server_address = ('localhost', 8080)
 
         # 소켓 생성
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
             # 서버에 연결
-            sock.connect(server_address)
 
             # 데이터를 받을 버퍼 크기 설정
             buffer_size = 1024
 
             # 데이터 받기
-            received_data = sock.recv(buffer_size)
+            received_data = self.server_socket.recv(buffer_size)
 
             # 받은 데이터 출력
             print("Received data:", received_data.decode())
 
         finally:
                 # 소켓 닫기
-            sock.close()
+            server_socket.close()
         pass
     
     def db_send_to_qt(self):
