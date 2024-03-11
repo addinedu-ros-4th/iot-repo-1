@@ -1,3 +1,4 @@
+#include <ArduinoJson.h> //라이브러리 설치 필요
 #include <Wire.h> 
 #include <Servo.h> //Servo 라이브러리를 추가
 
@@ -36,37 +37,16 @@ void loop() {
  
  // 초음파 센서
  float cycletime;
- float distance;
+ float distance2;
  digitalWrite(trig2, HIGH);
  delay(10);
  digitalWrite(trig2, LOW);
  cycletime = pulseIn(echo2, HIGH); 
- distance = ((340 * cycletime) / 10000) / 2;  
+ distance2 = ((340 * cycletime) / 10000) / 2;  
 
  // 물탱크, 가습기 물 수위
  int tank = analogRead(TANK_WATER); 
  int humi = analogRead(HUMI_WATER);
 
-
- if (pledval > 20) { // 조도센서값이 60이 넘으면
-  analogWrite(ledpin, pledval);  // LED는 조도센서 값의 밝기로 켜라 
-  } 
- else{  // 그 외 조도센서값이면 LED를 꺼라
-  analogWrite(ledpin, LOW);    
-  }
- 
- if(psoil_humi2 < 20) { // 토양수분값이 20미만이면
-  analogWrite(B_1A, 220); // 값을 변화(0~255)시키면서 호스에서 나오는 물의 양을 적정하게 설정
-  digitalWrite(B_2B, LOW);
-  delay(5000);
-  Serial.println("화분2 물공급!"); 
-  digitalWrite(B_1A, LOW); // 워터펌프 중단
-  digitalWrite(B_2B, LOW);
-  }
- else{  // 그 외 토양수분값이 측정되면 워터모터를 꺼라
-  digitalWrite(B_1A, LOW);
-  digitalWrite(B_2B, LOW);
-  } 
-
- delay(2000); 
+ delay(100);
 }
