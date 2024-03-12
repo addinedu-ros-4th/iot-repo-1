@@ -77,12 +77,18 @@ class SensorManager(threading.Thread):
                         data = json.loads(line)
                         with open("serial_data.json", "w") as file:
                             json.dump(data, file, indent=4)
-                        # 모든 콜백을 실행
                         for sensor_id, callback in self.callbacks.items():
                             now = datetime.now()
                             time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
-                            log = (time_stamp, sensor_id, data[sensor_id])
-                            iot_db.insert_sensor_data(log)
+                            sensor_data = (time_stamp, sensor_id, data[sensor_id])
+                            iot_db.insert_sensor_data(sensor_data)
+                            sensor_data_id, event, command = iot_db.check_event(time_stamp, sensor_id, data[sensor_id])
+                            if event is not None:
+                                camera_image_path = f"capture_data/{time_stamp}.jpg"
+                                event_log = (sensor_data_id, time_stamp, event, command, camera_image_path)
+                                iot_db.insert_event_log(event_log)
+                                
+                        # 모든 콜백을 실행
                             if sensor_id in data:
                                 callback(data)
                     except json.JSONDecodeError:
