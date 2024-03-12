@@ -8,6 +8,8 @@ def create_command(data):
  
     commands["ledCommand"] =  "on" if data["pledval"] < 50 else "off"
     commands["soilwaterCommand"] = "on" if data["psoil_humi2"] > 20 else"off"
+    commands["wtankCommand"] = "off" if data["tank_wlevel"] <10 else "on"
+    commands["humitankCommand"] = "off" if data["humi_wlevel"] <10 else "on"
 
     print("led will "+commands["ledCommand"])
     print("pump will "+commands["soilwaterCommand"])
