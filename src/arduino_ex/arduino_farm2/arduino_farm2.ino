@@ -66,7 +66,6 @@ void loop() {
  serializeJson(sending_doc, Serial);
  Serial.println();
 
- delay(100);
 
  if (Serial.available()) {
    StaticJsonDocument<200> recvDoc;
@@ -96,5 +95,6 @@ void loop() {
     
    }
  }
+ delay(100);
 
 }
