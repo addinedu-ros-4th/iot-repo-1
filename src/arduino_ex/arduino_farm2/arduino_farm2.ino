@@ -2,14 +2,14 @@
 #include <Wire.h> 
 #include <Servo.h> //Servo 라이브러리를 추가
 
-#define SOIL_HUMI2 A2
-#define TANK_WATER A3
-#define HUMI_WATER A4
+#define SOIL_HUMI2 A0
+#define TANK_WATER A1
+#define HUMI_WATER A2
 #define B_1A 11 // 모터드라이버 B_1A 단자 연결 핀번호(워터모터2용)
-#define B_2B 12 // 모터드라이버 B_2B 단자 연결 핀번호
+#define B_2B                                                                                                                                                                                                                                                                           12 // 모터드라이버 B_2B 단자 연결 핀번호
 
-Servo servo;      //Servo 클래스로 servo객체 생성
-int cds_pin = A1; // 조도센서에 사용할 핀번호
+// Servo servo;      //Servo 클래스로 servo객체 생성
+int cds_pin = A5; // 조도센서에 사용할 핀번호
 int echo2 = 8; // 초음파센서2 
 int trig2 = 13; // 초음파센서2
 int soil_humi2, psoil_humi2; 
@@ -45,8 +45,8 @@ void loop() {
  distance2 = ((340 * cycletime) / 10000) / 2;  
 
  // 물탱크, 가습기 물 수위
- int tank = analogRead(TANK_WATER); 
- int humi = analogRead(HUMI_WATER);
+ int tank_wlevel = analogRead(TANK_WATER); 
+ int humi_wlevel = analogRead(HUMI_WATER);
 
  // 보내는 센서값 (토양습도2, 거리2, 조도, 탱크수위, 가습기 수위)
  StaticJsonDocument<200> sending_doc;
@@ -60,4 +60,20 @@ void loop() {
  Serial.println();
 
  delay(100);
+
+ if (Serial.available()) {
+   StaticJsonDocument<200> recvDoc;
+   DeserializationError error = deserializeJson(recvDoc, Serial);
+   
+   if (!error) {
+     String ledCommand = recvDoc["pledval"];
+     
+     if (ledCommand == "on") {
+       analogWrite(ledpin, pledval); // LED 켜기
+     } else if (ledCommand == "off") {
+       analogWrite(ledpin, LOW); // LED 끄기
+     }
+   }
+ }
+
 }
