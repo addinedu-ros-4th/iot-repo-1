@@ -5,19 +5,19 @@ import time
 import pandas as pd
 
 
-sensor_type_list = ["Temp", "AirHum", "GndHum 1", "GndHum 2",  "Dist 1", "Dist 2", "Light"]
+sensor_type_list = ["air_temp", "air_humi", "psoil_humi1", "psoil_humi2",  "distance1", "distance2", "pledval"]
 
 event_command_dict = {
 #   "밝기 상승" : ???    
     "밝기 하락" : "LED 동작", 
-    "AirHum 상승" : "프로펠러 동작, 환풍구 열림",
-    "AirHum 하락" : "가습기 동작",
-    "GndHum 1 상승" : "알림",
-    "GndHum 1 하락" : "물 공급",
-    "GndHum 2 상승" : "알림",
-    "GndHum 2 하락" : "물 공급",
-    "Temp 상승" : "팬 동작",
-    "Temp 하락" : "방열 코일 동작",
+    "air_humi 상승" : "프로펠러 동작, 환풍구 열림",
+    "air_humi 하락" : "가습기 동작",
+    "psoil_humi1 상승" : "알림",
+    "psoil_humi1 하락" : "물 공급",
+    "psoil_humi2 상승" : "알림",
+    "psoil_humi2 하락" : "물 공급",
+    "air_temp 상승" : "팬 동작",
+    "air_temp 하락" : "방열 코일 동작",
     "물탱크 물부족" : "알림",
     "캡쳐" : "캡쳐",
     "성장" : "알림"
@@ -73,48 +73,48 @@ class Database:
     def check_event(self, time_stamp, sensor_type, value):
         sensor_data_id = self.get_data_id(time_stamp, sensor_type, value)
 
-        if sensor_type == "Temp":
+        if sensor_type == "air_temp":
             if value < 25:
-                event = "Temp 하락"
+                event = "air_temp 하락"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == "AirHum":
+        elif sensor_type == "air_humi":
             if value > 45:
-                event = "AirHum 상승"
+                event = "air_humi 상승"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == "GndHum 1":
+        elif sensor_type == "psoil_humi1":
+            if value > 80:
+                event = "psoil_humi1 상승"
+                command = event_command_dict[event]
+            elif value < 20:
+                event = "psoil_humi1 하락"
+                command = event_command_dict[event]
+            else:
+                event = None
+                command = None
+        elif sensor_type == "psoil_humi2":
             if value > 7:
-                event = "GndHum 1 상승"
+                event = "psoil_humi2 상승"
                 command = event_command_dict[event]
             elif value < 3:
-                event = "GndHum 1 하락"
+                event = "psoil_humi2 하락"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == "GndHum 2":
-            if value > 7:
-                event = "GndHum 2 상승"
-                command = event_command_dict[event]
-            elif value < 3:
-                event = "GndHum 2 하락"
-                command = event_command_dict[event]
-            else:
-                event = None
-                command = None
-        elif sensor_type == "Dist 1":
+        elif sensor_type == "distance1":
             if value > 7:
                 event = "성장"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == "Dist 2":
+        elif sensor_type == "distance2":
             if value > 7:
                 event = "성장"
                 command = event_command_dict[event]
@@ -132,11 +132,11 @@ class Database:
     #     if selected_event is None:
     #         query = """
     #         select substring(e.time_stamp, 12, 8) as "time_stamp", 
-    #             max(case when s.sensor_type = 'Temp' then s.value end) as `Temp`,
-    #             max(case when s.sensor_type = 'AirHum' then s.value end) as `AirHum`,
-    #             max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum`, 
+    #             max(case when s.sensor_type = 'air_temp' then s.value end) as `air_temp`,
+    #             max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
+    #             max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `GndHum`, 
     #             max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
-    #             max(case when s.sensor_type = 'Dist 1' then s.value end) as `Growth`
+    #             max(case when s.sensor_type = 'distance1' then s.value end) as `Growth`
     #         from event_log e
     #         join sensor_data s on e.time_stamp = s.time_stamp
     #         where date(e.time_stamp) = %s
@@ -145,11 +145,11 @@ class Database:
     #     else:
     #         query = """
     #         select substring(e.time_stamp, 12, 8) as "time_stamp", 
-    #             max(case when s.sensor_type = 'Temp' then s.value end) as `Temp`,
-    #             max(case when s.sensor_type = 'AirHum' then s.value end) as `AirHum`,
-    #             max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum`, 
+    #             max(case when s.sensor_type = 'air_temp' then s.value end) as `air_temp`,
+    #             max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
+    #             max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `GndHum`, 
     #             max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
-    #             max(case when s.sensor_type = 'Dist 1' then s.value end) as `Growth`
+    #             max(case when s.sensor_type = 'distance1' then s.value end) as `Growth`
     #         from event_log e
     #         join sensor_data s on e.time_stamp = s.time_stamp
     #         where date(e.time_stamp) = %s and event = %s
@@ -164,12 +164,12 @@ class Database:
 
         query = """
         select substring(e.time_stamp, 12, 8) as "time_stamp", 
-            max(case when s.sensor_type = 'Temp' then s.value end) as `Temp`,
-            max(case when s.sensor_type = 'AirHum' then s.value end) as `AirHum`,
-            max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum 1`,
-            max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum 2`, 
-            max(case when s.sensor_type = 'Dist 1' then s.value end) as `Dist 1`,
-            max(case when s.sensor_type = 'Dist 2' then s.value end) as `Dist 2`
+            max(case when s.sensor_type = 'air_temp' then s.value end) as `air_temp`,
+            max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
+            max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `psoil_humi1`,
+            max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `psoil_humi2`, 
+            max(case when s.sensor_type = 'distance1' then s.value end) as `distance1`,
+            max(case when s.sensor_type = 'distance2' then s.value end) as `distance2`
         from event_log e
         join sensor_data s on e.time_stamp = s.time_stamp
         where date(e.time_stamp) = %s
@@ -192,11 +192,11 @@ class Database:
         cursor = self.conn.cursor()
         query = """
         select substring(e.time_stamp, 12, 8) as "time_stamp", 
-            max(case when s.sensor_type = 'Temp' then s.value end) as `Temp`,
-            max(case when s.sensor_type = 'AirHum' then s.value end) as `AirHum`,
-            max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum`, 
+            max(case when s.sensor_type = 'air_temp' then s.value end) as `air_temp`,
+            max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
+            max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `GndHum`, 
             max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
-            max(case when s.sensor_type = 'Dist 1' then s.value end) as `Growth`
+            max(case when s.sensor_type = 'distance1' then s.value end) as `Growth`
         from event_log e
         join sensor_data s on e.time_stamp = s.time_stamp
         where date(e.time_stamp) = %s and event = '캡쳐'
