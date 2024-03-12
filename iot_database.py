@@ -163,13 +163,17 @@ class Database:
         cursor = self.conn.cursor()
 
         query = """
-        select substring(e.time_stamp, 12, 8) as "time_stamp", 
+        select substring(e.time_stamp, 12, 8) as "time_stamp",
+            e.event,
+            e.comand,
             max(case when s.sensor_type = 'air_temp' then s.value end) as `air_temp`,
             max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
             max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `psoil_humi1`,
             max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `psoil_humi2`, 
             max(case when s.sensor_type = 'distance1' then s.value end) as `distance1`,
-            max(case when s.sensor_type = 'distance2' then s.value end) as `distance2`
+            max(case when s.sensor_type = 'distance2' then s.value end) as `distance2`,
+            max(case when s.sensor_type = 'pldeval' then s.value end) as `pledval`,
+            e. camera_image_path
         from event_log e
         join sensor_data s on e.time_stamp = s.time_stamp
         where date(e.time_stamp) = %s
@@ -191,16 +195,9 @@ class Database:
     def watch_capture_log(self, selected_date):
         cursor = self.conn.cursor()
         query = """
-        select substring(e.time_stamp, 12, 8) as "time_stamp", 
-            max(case when s.sensor_type = 'air_temp' then s.value end) as `air_temp`,
-            max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
-            max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `GndHum`, 
-            max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
-            max(case when s.sensor_type = 'distance1' then s.value end) as `Growth`
-        from event_log e
-        join sensor_data s on e.time_stamp = s.time_stamp
-        where date(e.time_stamp) = %s and event = '캡쳐'
-        group by e.time_stamp
+        select substring(time_stamp, 12, 8) as "time_stamp", camera_image_path
+        from event_log
+        where date(time_stamp) = %s and event = 'capture'
         """
 
         df = pd.read_sql(query, self.conn, params=[selected_date])
