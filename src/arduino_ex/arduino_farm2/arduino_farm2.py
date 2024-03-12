@@ -3,6 +3,15 @@ import json
 
 # 시리얼 포트 연결 설정
 ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # 포트 번호는 시스템에 따라 달라질 수 있음
+def create_command(data):
+    commands = {}
+ 
+    commands["ledCommand"] =  "on" if data["pledval"] < 50 else "off"
+    commands["soilwaterCommand"] = "on" if data["psoil_humi2"] > 20 else"off"
+
+    print("led will "+commands["ledCommand"])
+    print("pump will "+commands["soilwaterCommand"])
+    return commands
 
 try:
     while True:
@@ -18,10 +27,12 @@ try:
                 print("tank_wlevel", data["tank_wlevel"])
                 print("humi_wlevel:", data["humi_wlevel"])
 
-                command = {"pledval": "on"} if data["pledval"] > 20 else {"pledval": "off"}
+                command = create_command(data)            
                 command_json = json.dumps(command) + '\n'  # JSON 문자열로 변환 후 줄바꿈 추가
                 ser.write(command_json.encode())  # 아두이노로 명령 전송
 
+
+                
 
                 #  if (pledval > 20) { // 조도센서값이 60이 넘으면
                 #     analogWrite(ledpin, pledval);  // LED는 조도센서 값의 밝기로 켜라 
