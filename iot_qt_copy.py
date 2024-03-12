@@ -2,7 +2,7 @@ import sys
 from PyQt5.uic import loadUi
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QLineEdit,QDialog, QApplication, QStackedWidget
-from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint, QDate
+from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint, QDate,pyqtSlot
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from iot_database import Database
@@ -155,6 +155,11 @@ class LoginScreen(QDialog):
 
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
 
+
+        #aduino serial communication
+        #self.serial_port = serial.Serial('/dev/ttyACM0', 9600)  # 아두이노와 연결된 시리얼 포트
+        #self.data_received.connect(self.handle_data)
+
     #tablewidget with qlinedit
     def onTableWidgetCellClicked(self, row, column):
         time_column_index = 0
@@ -223,6 +228,7 @@ class LoginScreen(QDialog):
             other_button.show()
             self.BtnCapture.hide()
             self.create_new_camera_thread(camera_thread_to_toggle.camera_index)
+            self.getAduinoData()
 
         else:
             if other_camera_thread.isRunning():
@@ -274,8 +280,8 @@ class LoginScreen(QDialog):
         selected_date = self.calender.selectedDate()
         self.DateField.setText(selected_date.toString("yyyy-MM-dd"))
 
-        df = self.SendDateToServer(selected_date.toString("yyyy-MM-dd"))
-        self.UpdateTableWidget(df)
+        #df = self.SendDateToServer(selected_date.toString("yyyy-MM-dd"))
+        #self.UpdateTableWidget(df)
 
     # TableWidget update
     def UpdateTableWidget(self, df):
@@ -357,6 +363,43 @@ class LoginScreen(QDialog):
         client_socket.close()
 
         return df
+
+    @pyqtSlot(dict)
+    def handle_data(self, data):
+        """time_stamp = data["time_stamp"]
+        arduino_id = data["arduino_id"]
+        temp_value = data["temp_value"]
+        air_hum_value = data["air_hum_value"]
+        gnd_hum_value = data["gnd_hum_value"]
+        bright_value = data["bright_value"]"""
+        temp_value = 0
+        air_hum_value = 0
+        gnd_hum_value = 0
+        bright_value = 0
+        # 데이터를 사용하여 필요한 작업 수행
+        self.TempVal.setText(temp_value)
+
+        self.AirHumidVal.setText(air_hum_value)
+
+        self.GroundHumidVal.setText(gnd_hum_value)
+
+        self.BrightVal.setText(bright_value)
+        print(f"Received data from Arduino: {data}")
+
+
+    def getAduinoData(self):
+        """while True:
+            line = self.serial_port.readline().decode().strip()  # 시리얼 포트에서 데이터 읽기
+            try:
+                data = json.loads(line)  # JSON 형식의 데이터로 변환
+                self.data_received.emit(data)  # 데이터를 수신하는 시그널 발생
+            except json.JSONDecodeError:
+                print("Invalid JSON format:", line)"""
+        self.data_received.emit(data)  # 데이터를 수신하는 시그널 발생
+    
+    def sendActionToAduino(self):
+        self.se
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

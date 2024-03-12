@@ -9,6 +9,59 @@ import multiprocessing
 import serial
 
 
+class ArduinoDataSender(threading.Thread):
+    def __init__(self, host, port):
+        super().__init__()
+        self.port = 8080
+        self.ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # 포트 번호는 시스템에 따라 달라질 수 있음
+        self.running = True
+
+    def connect(self):
+        try:
+            self.client_socket.connect((self.host, self.port))
+        except Exception as e:
+            print(f"Failed to connect to Arduino: {e}")
+
+    def run(self):
+        self.connect()
+        while self.running:
+            try:
+                # 아두이노로부터 데이터를 읽어와서 전송
+                arduino_data = input("Enter data to send to Arduino: ")
+                self.client_socket.sendall(arduino_data.encode())
+            except Exception as e:
+                print(f"Failed to send data to Arduino: {e}")
+                self.connect()
+
+    def stop(self):
+        self.running = False
+        self.client_socket.close()
+
+class PyQtDataReceiver(threading.Thread):
+    def __init__(self, host, port):
+        super().__init__()
+        self.host = host
+        self.port = port
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(1)
+        self.client_socket, self.client_address = self.server_socket.accept()
+        self.running = True
+
+    def run(self):
+        while self.running:
+            try:
+                # 파이큐티로부터 데이터 수신
+                data = self.client_socket.recv(1024).decode()
+                print(f"Received data from PyQt: {data}")
+            except Exception as e:
+                print(f"Failed to receive data from PyQt: {e}")
+                self.running = False
+
+    def stop(self):
+        self.running = False
+        self.client_socket.close()
+        self.server_socket.close()
 
 def get_ip_address(interface):
     try:
@@ -145,6 +198,7 @@ class Server:
 
     def adu_send_to_qt(self):
         data = self.process_adu_data()
+        
         
 
 
