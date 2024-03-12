@@ -73,6 +73,8 @@ class SensorManager(threading.Thread):
                     line = ser.readline().decode('utf-8', errors='ignore').rstrip()
                     try:
                         data = json.loads(line)
+                        with open("serial_data.json", "w") as file:
+                            json.dump(data, file, indent=4)
                         # 모든 콜백을 실행
                         for sensor_id, callback in self.callbacks.items():
                             if sensor_id in data:
@@ -184,22 +186,13 @@ class LoginScreen(QDialog):
         #Table connect with QlineEdit
         self.TempVal = self.findChild(QLineEdit, 'TempVal')
         self.AirHumidVal = self.findChild(QLineEdit, 'AirHumidVal')
-        self.GroundHumidVal_1 = self.findChild(QLineEdit, 'GroundHumidVal')
+        self.GroundHumidVal = self.findChild(QLineEdit, 'GroundHumidVal')
         self.GroundHumidVal_2 = self.findChild(QLineEdit, 'GroundHumidVal_2')
         self.BrightVal = self.findChild(QLineEdit, 'BrightVal')
         self.HeightVal_1 = self.findChild(QLineEdit, 'HeightVal')
         self.HeightVal_2 = self.findChild(QLineEdit, 'HeightVal_2')
 
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
-
-        #signal test
-        self.updateTempValSignal.connect(self.updateTempVal)
-        self.updateAirHumidValSignal.connect(self.updateAirHumid)
-        self.updateGroundHumidVal_1_Signal.connect(self.updateGndHumid_1)
-        self.updateGroundHumidVal_2_Signal.connect(self.updateGndHumid_2) 
-        self.updateBrightValSignal.connect(self.updateBright) 
-        self.updateHeighttVal_1_Signal.connect(self.updateHeight_1) 
-        self.updateHeighttVal_2_Signal.connect(self.updateHeight_2) 
 
         self.startSensorThreads()
 
@@ -213,7 +206,7 @@ class LoginScreen(QDialog):
         self.AirHumidVal.setText(value)
  
     def updateGndHumid_1(self, value):
-        self.GroundHumidVal_1.setText(value)
+        self.GroundHumidVal.setText(value)
 
     def updateGndHumid_2(self, value):
         self.GroundHumidVal_2.setText(value)
@@ -229,15 +222,15 @@ class LoginScreen(QDialog):
         callbacks = {
             "air_temp": self.temp_control,
             "air_humi": self.airhum_control,
-            "pssoil_humi1": self.Gnd_hum_1_control,
-            "pssoil_humi2": self.Gnd_hum_2_control,
+            "psoil_humi1": self.Gnd_hum_1_control,
+            "psoil_humi2": self.Gnd_hum_2_control,
             "distance1": self.Height_1_control,
             "distance2": self.Height_2_control,
             "pledval": self.bright_control
         }
 
         # 단일 SensorManager 인스턴스 생성
-        self.sensorManager = SensorManager('/dev/ttyACM0', 9600, callbacks)
+        self.sensorManager = SensorManager('/dev/ttyACM1', 9600, callbacks)
         self.sensorManager.start()
 
         # UI 업데이트용 신호 연결
@@ -250,22 +243,28 @@ class LoginScreen(QDialog):
         self.updateBrightValSignal.connect(self.updateBright)
 
     def temp_control(self, data):
-        pass
+        temp_value = data["air_temp"] 
+        self.updateTempValSignal.emit(str(temp_value))
 
     def airhum_control(self, data):
-        pass
+        airhum_value = data["air_humi"]  
+        self.updateAirHumidValSignal.emit(str(airhum_value)) 
 
     def Gnd_hum_1_control(self, data):
-        pass
+        GND1_value = data["psoil_humi1"]  
+        self.updateGroundHumidVal_1_Signal.emit(str(GND1_value)) 
 
     def Gnd_hum_2_control(self, data):
-        pass
+        GND2_value = data["psoil_humi2"]  
+        self.updateGroundHumidVal_2_Signal.emit(str(GND2_value)) 
 
     def Height_1_control(self, data):
-        pass
+        height1_value = data["distance1"] 
+        self.updateHeighttVal_1_Signal.emit(str(height1_value)) 
 
     def Height_2_control(self, data):
-        pass
+        height2_value = data["distance2"] 
+        self.updateHeighttVal_2_Signal.emit(str(height2_value)) 
 
     def bright_control(self, data):
         # logic
@@ -275,26 +274,23 @@ class LoginScreen(QDialog):
         else :
             led_status = 'off'
         # UI update
-        self.updateTempValSignal.emit(str(light))
+        self.updateBrightValSignal.emit(str(light))
         # transmitte
         self.sendCommandToArduino({"led": led_status})
 
     def sendCommandToArduino(self, command):
         command_json = json.dumps(command) + '\n'
-        with serial.Serial('/dev/ttyACM0', 9600, timeout=1) as ser:
+        with open("emit_data.json", "w") as file:
+            json.dump(command_json, file, indent=4)
+        with serial.Serial('/dev/ttyACM1', 9600, timeout=1) as ser:
             ser.write(command_json.encode())
 
     def stopSensorThreads(self):
-    # TempVal 스레드 중단 로직
-        if self.tempSensorThread and self.tempSensorThread.is_alive():
-            self.tempSensorThread.stop()
-
-        # 다른 센서 스레드 중단 로직도 추가
-        # ...
+        if self.sensorManager and self.sensorManager.is_alive():
+            self.sensorManager.stop()
 
     def saveDataToJsonFile(self, data):
-        with open("serial_data.json", "w") as file:
-            json.dump(data, file, indent=4)
+        pass
 
     #tablewidget with qlinedit
     def onTableWidgetCellClicked(self, row, column):
