@@ -245,7 +245,7 @@ class LoginScreen(QDialog):
         }
 
         # 단일 SensorManager 인스턴스 생성
-        self.sensorManager = SensorManager('/dev/ttyACM1', 9600, callbacks)
+        self.sensorManager = SensorManager('/dev/ttyACM0', 9600, callbacks)
         self.sensorManager.start()
 
         # UI 업데이트용 신호 연결
@@ -317,7 +317,7 @@ class LoginScreen(QDialog):
         command_json = json.dumps(self.commands) + '\n'
         with open("emit_data.json", "w") as file:
             json.dump(self.commands, file, indent=4) 
-        with serial.Serial('/dev/ttyACM1', 9600, timeout=1) as ser:
+        with serial.Serial('/dev/ttyACM0', 9600, timeout=1) as ser:
             ser.write(command_json.encode())
 
     def stopSensorThreads(self):
