@@ -17,7 +17,7 @@ event_command_dict = {
     "온도 상승" : "팬 동작",
     "온도 하락" : "방열 코일 동작",
     "물탱크 물부족" : "알림",
-    "캡쳐버튼 클릭" : "캡쳐",
+    "캡쳐" : "캡쳐",
     "성장" : "알림"
     }
 
@@ -147,6 +147,31 @@ class Database:
         cursor.close()
         return df
 
+    def insert_capture_log(self, log):
+        cursor = self.conn.cursor()
+        query = "INSERT INTO event_log (data_id, time_stamp, event, command, camera_image_path) VALUES (%s, %s, %s, %s, %s)"
+        cursor.execute(query, log)
+        self.conn.commit()
+        cursor.close()
+    
+    def watch_capture_log(self, selected_date):
+        cursor = self.conn.cursor()
+        query = """
+        select substring(e.time_stamp, 12, 8) as "time_stamp", 
+            max(case when s.sensor_type = '온도' then s.value end) as `Temp`,
+            max(case when s.sensor_type = '습도' then s.value end) as `AirHum`,
+            max(case when s.sensor_type = '토양 수분' then s.value end) as `GndHum`, 
+            max(case when s.sensor_type = '조도' then s.value end) as `Bright`,
+            max(case when s.sensor_type = '초음파' then s.value end) as `Growth`
+        from event_log e
+        join sensor_data s on e.time_stamp = s.time_stamp
+        where date(e.time_stamp) = %s and event = '캡쳐'
+        group by e.time_stamp
+        """
+
+        df = pd.read_sql(query, self.conn, params=[selected_date])
+        cursor.close()
+        return df
 
 def main():
 
@@ -169,9 +194,17 @@ def main():
                 camera_image_path = f"capture_data/{time_stamp}.jpg"
                 log = (sensor_data_id, time_stamp, event, command, camera_image_path)
                 iot_db.insert_event_log(log)
+
+        camera = random.randint(0, 1)
+        if camera == 1:
+            event = "캡쳐"
+            command = event_command_dict[event]
+            log = (None, time_stamp, event, command, camera_image_path)
+            iot_db.insert_capture_log(log)
         time.sleep(1)
-    selected_date = "2024-03-09"
-    df = iot_db.watch_log(selected_date)
+
+    selected_date = "2024-03-12"
+    df = iot_db.watch_capture_log(selected_date)
     print(df)
     iot_db.close()
  
