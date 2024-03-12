@@ -398,7 +398,7 @@ class LoginScreen(QDialog):
         self.data_received.emit(data)  # 데이터를 수신하는 시그널 발생
     
     def sendActionToAduino(self):
-        self.se
+        self
 
 
 if __name__ == '__main__':
