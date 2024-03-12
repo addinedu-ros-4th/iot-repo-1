@@ -165,7 +165,7 @@ class Database:
         query = """
         select substring(e.time_stamp, 12, 8) as "time_stamp",
             e.event,
-            e.comand,
+            e.command,
             max(case when s.sensor_type = 'air_temp' then s.value end) as `air_temp`,
             max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
             max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `psoil_humi1`,
