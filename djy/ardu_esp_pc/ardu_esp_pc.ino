@@ -1,8 +1,8 @@
 #include <WiFi.h>
 
 const char* ssid = "KT_GiGA_4A30";
-const char* password = "*";
-const char* host = "172.30.1.9"; // PC의 IP 주소
+const char* password = "d7ge18kj21";
+const char* host = "172.30.1.50"; // PC의 IP 주소
 const int port = 8080; // PC의 포트 번호
 
 void setup() {
