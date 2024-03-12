@@ -5,17 +5,19 @@ import time
 import pandas as pd
 
 
-sensor_type_list = ["조도", "습도", "토양 수분", "온도", "물 탱크", "초음파"]
+sensor_type_list = ["Temp", "AirHum", "GndHum 1", "GndHum 2",  "Dist 1", "Dist 2", "Light"]
 
 event_command_dict = {
 #   "밝기 상승" : ???    
     "밝기 하락" : "LED 동작", 
-    "습도 상승" : "펜 동작",
-    "습도 하락" : "가습기 동작",
-    "토양 수분 상승" : "알림",
-    "토양 수분 하락" : "물 공급",
-    "온도 상승" : "팬 동작",
-    "온도 하락" : "방열 코일 동작",
+    "AirHum 상승" : "펜 동작",
+    "AirHum 하락" : "가습기 동작",
+    "GndHum 1 상승" : "알림",
+    "GndHum 1 하락" : "물 공급",
+    "GndHum 2 상승" : "알림",
+    "GndHum 2 하락" : "물 공급",
+    "Temp 상승" : "팬 동작",
+    "Temp 하락" : "방열 코일 동작",
     "물탱크 물부족" : "알림",
     "캡쳐" : "캡쳐",
     "성장" : "알림"
@@ -71,51 +73,51 @@ class Database:
     def check_event(self, time_stamp, sensor_type, value):
         sensor_data_id = self.get_data_id(time_stamp, sensor_type, value)
 
-        if sensor_type == sensor_type_list[0]:
+        if sensor_type == "Temp":
             if value < 3:
-                event = "밝기 하락"
+                event = "Temp 하락"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == sensor_type_list[1]:
+        elif sensor_type == "AirHum":
             if value > 7:
-                event = "습도 상승"
+                event = "AirHum 상승"
                 command = event_command_dict[event]
             elif value < 3:
-                event = "습도 하락"
+                event = "AirHum 하락"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == sensor_type_list[2]:
+        elif sensor_type == "GndHum 1":
             if value > 7:
-                event = "토양 수분 상승"
+                event = "GndHum 1 상승"
                 command = event_command_dict[event]
             elif value < 3:
-                event = "토양 수분 하락"
+                event = "GndHum 1 하락"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == sensor_type_list[3]:
+        elif sensor_type == "GndHum 2":
             if value > 7:
-                event = "온도 상승"
+                event = "GndHum 2 상승"
                 command = event_command_dict[event]
             elif value < 3:
-                event = "온도 하락"
+                event = "GndHum 2 하락"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == sensor_type_list[4]:
+        elif sensor_type == "Dist 1":
             if value > 7:
-                event = "물탱크 물부족"
+                event = "성장"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
-        elif sensor_type == sensor_type_list[5]:
+        elif sensor_type == "Dist 2":
             if value > 7:
                 event = "성장"
                 command = event_command_dict[event]
@@ -128,21 +130,56 @@ class Database:
 
         return sensor_data_id, event, command
 
+    # def watch_log(self, selected_date, selected_event):
+    #     cursor = self.conn.cursor()
+    #     if selected_event is None:
+    #         query = """
+    #         select substring(e.time_stamp, 12, 8) as "time_stamp", 
+    #             max(case when s.sensor_type = 'Temp' then s.value end) as `Temp`,
+    #             max(case when s.sensor_type = 'AirHum' then s.value end) as `AirHum`,
+    #             max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum`, 
+    #             max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
+    #             max(case when s.sensor_type = 'Dist 1' then s.value end) as `Growth`
+    #         from event_log e
+    #         join sensor_data s on e.time_stamp = s.time_stamp
+    #         where date(e.time_stamp) = %s
+    #         group by e.time_stamp
+    #         """
+    #     else:
+    #         query = """
+    #         select substring(e.time_stamp, 12, 8) as "time_stamp", 
+    #             max(case when s.sensor_type = 'Temp' then s.value end) as `Temp`,
+    #             max(case when s.sensor_type = 'AirHum' then s.value end) as `AirHum`,
+    #             max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum`, 
+    #             max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
+    #             max(case when s.sensor_type = 'Dist 1' then s.value end) as `Growth`
+    #         from event_log e
+    #         join sensor_data s on e.time_stamp = s.time_stamp
+    #         where date(e.time_stamp) = %s and event = %s
+    #         group by e.time_stamp
+    #         """
+    #     df = pd.read_sql(query, self.conn, params=[selected_date, selected_event])
+    #     cursor.close()
+    #     return df
 
     def watch_log(self, selected_date):
         cursor = self.conn.cursor()
+
         query = """
         select substring(e.time_stamp, 12, 8) as "time_stamp", 
-            max(case when s.sensor_type = '온도' then s.value end) as `Temp`,
-            max(case when s.sensor_type = '습도' then s.value end) as `AirHum`,
-            max(case when s.sensor_type = '토양 수분' then s.value end) as `GndHum`, 
-            max(case when s.sensor_type = '조도' then s.value end) as `Bright`,
-            max(case when s.sensor_type = '초음파' then s.value end) as `Growth`
+            max(case when s.sensor_type = 'Temp' then s.value end) as `Temp`,
+            max(case when s.sensor_type = 'AirHum' then s.value end) as `AirHum`,
+            max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum 1`,
+            max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum 2`, 
+            max(case when s.sensor_type = 'Dist 1' then s.value end) as `Dist 1`,
+            max(case when s.sensor_type = 'Dist 2' then s.value end) as `Dist 2`
         from event_log e
         join sensor_data s on e.time_stamp = s.time_stamp
         where date(e.time_stamp) = %s
         group by e.time_stamp
         """
+        # max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
+
         df = pd.read_sql(query, self.conn, params=[selected_date])
         cursor.close()
         return df
@@ -158,11 +195,11 @@ class Database:
         cursor = self.conn.cursor()
         query = """
         select substring(e.time_stamp, 12, 8) as "time_stamp", 
-            max(case when s.sensor_type = '온도' then s.value end) as `Temp`,
-            max(case when s.sensor_type = '습도' then s.value end) as `AirHum`,
-            max(case when s.sensor_type = '토양 수분' then s.value end) as `GndHum`, 
-            max(case when s.sensor_type = '조도' then s.value end) as `Bright`,
-            max(case when s.sensor_type = '초음파' then s.value end) as `Growth`
+            max(case when s.sensor_type = 'Temp' then s.value end) as `Temp`,
+            max(case when s.sensor_type = 'AirHum' then s.value end) as `AirHum`,
+            max(case when s.sensor_type = 'GndHum 1' then s.value end) as `GndHum`, 
+            max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
+            max(case when s.sensor_type = 'Dist 1' then s.value end) as `Growth`
         from event_log e
         join sensor_data s on e.time_stamp = s.time_stamp
         where date(e.time_stamp) = %s and event = '캡쳐'
@@ -180,7 +217,7 @@ def main():
 
     iot_db.connect()
 
-    for i in range(10):
+    for i in range(2):
         now = datetime.now()
         time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
         for sensor_type in sensor_type_list:
@@ -202,7 +239,7 @@ def main():
         time.sleep(1)
 
     selected_date = "2024-03-12"
-    df = iot_db.watch_capture_log(selected_date)
+    df = iot_db.watch_log(selected_date)
     print(df)
     iot_db.close()
  
