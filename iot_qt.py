@@ -55,14 +55,12 @@ class Camera(QThread):
             cv2.imwrite(filename, frame)
             print(f"Image saved: {filename}")  
 
-class SensorThread(threading.Thread):
-    def __init__(self, port, baudrate, update_signal, sensor_id, callback):
+class SensorManager(threading.Thread):
+    def __init__(self, port, baudrate, callbacks):
         threading.Thread.__init__(self)
         self.port = port
         self.baudrate = baudrate
-        self.update_signal = update_signal
-        self.sensor_id = sensor_id
-        self.callback = callback
+        self.callbacks = callbacks 
         self.running = False
 
     def run(self):
@@ -72,13 +70,15 @@ class SensorThread(threading.Thread):
         try:
             while self.running:
                 if ser.in_waiting > 0:
-                    line = ser.readline().decode('utf-8').rstrip()
+                    line = ser.readline().decode('utf-8', errors='ignore').rstrip()
                     try:
                         data = json.loads(line)
-                        # callback을통해 센서에게 명령전달
-                        self.callback(data)
+                        # 모든 콜백을 실행
+                        for sensor_id, callback in self.callbacks.items():
+                            if sensor_id in data:
+                                callback(data)
                     except json.JSONDecodeError:
-                        print(f"JSON decode error in sensor {self.sensor_id}:", line)
+                        print(f"JSON decode error:", line)
         finally:
             ser.close()
 
@@ -103,8 +103,11 @@ class LoginScreen(QDialog):
 
     updateTempValSignal = pyqtSignal(str)
     updateAirHumidValSignal = pyqtSignal(str)
-    updateGroundHumidValSignal = pyqtSignal(str)
+    updateGroundHumidVal_1_Signal = pyqtSignal(str)
+    updateGroundHumidVal_2_Signal = pyqtSignal(str)
     updateBrightValSignal = pyqtSignal(str)
+    updateHeighttVal_1_Signal = pyqtSignal(str)
+    updateHeighttVal_2_Signal = pyqtSignal(str)
 
     def __init__(self):
         super(LoginScreen, self).__init__()
@@ -175,51 +178,106 @@ class LoginScreen(QDialog):
                     button.setIcon(self.createTriangleIcon(icon_direction))
         
         #DB connection on tableWidget
-        self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
+        self.tableWidget = self.findChild(QtWidgets.QTableWidget,'tableWidget')
         self.DisplaySensorLog()
 
         #Table connect with QlineEdit
         self.TempVal = self.findChild(QLineEdit, 'TempVal')
         self.AirHumidVal = self.findChild(QLineEdit, 'AirHumidVal')
-        self.GroundHumidVal = self.findChild(QLineEdit, 'GroundHumidVal')
+        self.GroundHumidVal_1 = self.findChild(QLineEdit, 'GroundHumidVal')
+        self.GroundHumidVal_2 = self.findChild(QLineEdit, 'GroundHumidVal_2')
         self.BrightVal = self.findChild(QLineEdit, 'BrightVal')
-        self.HeightVal = self.findChild(QLineEdit, 'HeightVal')
+        self.HeightVal_1 = self.findChild(QLineEdit, 'HeightVal')
+        self.HeightVal_2 = self.findChild(QLineEdit, 'HeightVal_2')
 
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
 
         #signal test
         self.updateTempValSignal.connect(self.updateTempVal)
+        self.updateAirHumidValSignal.connect(self.updateAirHumid)
+        self.updateGroundHumidVal_1_Signal.connect(self.updateGndHumid_1)
+        self.updateGroundHumidVal_2_Signal.connect(self.updateGndHumid_2) 
+        self.updateBrightValSignal.connect(self.updateBright) 
+        self.updateHeighttVal_1_Signal.connect(self.updateHeight_1) 
+        self.updateHeighttVal_2_Signal.connect(self.updateHeight_2) 
+
         self.startSensorThreads()
 
-    # Update the TempVal QLineEdit with the new value   (Hard Coding해야함 각각 센서 전부) 
+    def updateBright(self, value):
+        self.BrightVal.setText(value)
+ 
     def updateTempVal(self, value):
-        
         self.TempVal.setText(value)
+ 
+    def updateAirHumid(self, value):
+        self.AirHumidVal.setText(value)
+ 
+    def updateGndHumid_1(self, value):
+        self.GroundHumidVal_1.setText(value)
+
+    def updateGndHumid_2(self, value):
+        self.GroundHumidVal_2.setText(value)
+
+    def updateHeight_1(self, value):
+        self.HeightVal_1.setText(value)
+
+    def updateHeight_2(self, value):
+        self.HeightVal_2.setText(value)
 
     def startSensorThreads(self):
-        # temp thred init
-        self.tempSensorThread = SensorThread('/dev/ttyACM0', 9600, self.updateTempValSignal, "temperature", self.processSensorData)
-        self.tempSensorThread.start()
+        # 센서별 콜백 함수들을 딕셔너리에 정의
+        callbacks = {
+            "air_temp": self.temp_control,
+            "air_humi": self.airhum_control,
+            "pssoil_humi1": self.Gnd_hum_1_control,
+            "pssoil_humi2": self.Gnd_hum_2_control,
+            "distance1": self.Height_1_control,
+            "distance2": self.Height_2_control,
+            "pledval": self.bright_control
+        }
+
+        # 단일 SensorManager 인스턴스 생성
+        self.sensorManager = SensorManager('/dev/ttyACM0', 9600, callbacks)
+        self.sensorManager.start()
+
+        # UI 업데이트용 신호 연결
         self.updateTempValSignal.connect(self.updateTempVal)
+        self.updateAirHumidValSignal.connect(self.updateAirHumid)
+        self.updateGroundHumidVal_1_Signal.connect(self.updateGndHumid_1)
+        self.updateGroundHumidVal_2_Signal.connect(self.updateGndHumid_2)
+        self.updateHeighttVal_1_Signal.connect(self.updateHeight_1)
+        self.updateHeighttVal_2_Signal.connect(self.updateHeight_2)
+        self.updateBrightValSignal.connect(self.updateBright)
 
-        # airhum thred init
-        # self.airHumidSensorThread = SensorThread('/dev/ttyACM0', 9600, self.updateAirHumidValSignal, "humidity")
-        # self.airHumidSensorThread.start()
-        # self.updateAirHumidValSignal.connect(self.updateAirHumidVal)
-        
-        #other sensor also follow this format
+    def temp_control(self, data):
+        pass
 
-    def processSensorData(self, data):
-        # 여기에 센서 데이터 처리 로직을 추가
-        light = data.get("light", 0)
-        if light < 5: 
-            light = 5
-        elif light > 250:
-            light = 250
-        # UI에 데이터 업데이트
+    def airhum_control(self, data):
+        pass
+
+    def Gnd_hum_1_control(self, data):
+        pass
+
+    def Gnd_hum_2_control(self, data):
+        pass
+
+    def Height_1_control(self, data):
+        pass
+
+    def Height_2_control(self, data):
+        pass
+
+    def bright_control(self, data):
+        # logic
+        light = data["pledval"]
+        if light > 30: 
+            led_status = 'on'
+        else :
+            led_status = 'off'
+        # UI update
         self.updateTempValSignal.emit(str(light))
-        # 명령 전송 로직
-        self.sendCommandToArduino({"led": light})
+        # transmitte
+        self.sendCommandToArduino({"led": led_status})
 
     def sendCommandToArduino(self, command):
         command_json = json.dumps(command) + '\n'
