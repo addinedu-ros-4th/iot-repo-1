@@ -420,6 +420,16 @@ class LoginScreen(QDialog):
     def captureImage(self):
         if self.active_camera_thread is not None:
             self.active_camera_thread.capture_image()
+            iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
+            iot_db.connect()
+            now = datetime.now()
+            time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
+            event = "capture"
+            command = "capture"
+            camera_image_path = f"capture_data/{time_stamp}.jpg"
+            log = (None, time_stamp, event, command, camera_image_path)
+            iot_db.insert_capture_log(log)
+            iot_db.close()
 
     def updateImage(self, qt_image):
         self.image_label = self.findChild(QLabel, 'VisionLabel') 
