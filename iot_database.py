@@ -10,7 +10,7 @@ sensor_type_list = ["Temp", "AirHum", "GndHum 1", "GndHum 2",  "Dist 1", "Dist 2
 event_command_dict = {
 #   "밝기 상승" : ???    
     "밝기 하락" : "LED 동작", 
-    "AirHum 상승" : "펜 동작",
+    "AirHum 상승" : "프로펠러 동작, 환풍구 열림",
     "AirHum 하락" : "가습기 동작",
     "GndHum 1 상승" : "알림",
     "GndHum 1 하락" : "물 공급",
@@ -74,18 +74,15 @@ class Database:
         sensor_data_id = self.get_data_id(time_stamp, sensor_type, value)
 
         if sensor_type == "Temp":
-            if value < 3:
+            if value < 25:
                 event = "Temp 하락"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
         elif sensor_type == "AirHum":
-            if value > 7:
+            if value > 45:
                 event = "AirHum 상승"
-                command = event_command_dict[event]
-            elif value < 3:
-                event = "AirHum 하락"
                 command = event_command_dict[event]
             else:
                 event = None
