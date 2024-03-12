@@ -74,13 +74,14 @@ void loop() {
    if (!error) {
      String ledCommand = recvDoc["ledCommand"];
      String soilwaterCommand = recvDoc["soilwaterCommand"];
-     
+     String wtankCommand = recvDoc["wtankCommand"];
+     String humitankCommand = recvDoc["humitankCommand"];
      
 
-     if (soilwaterCommand == "on") {
+     if (soilwaterCommand == "on" && wtankCommand == "on") {
        analogWrite(B_1A, 220); // LED 켜기
        digitalWrite(B_2B,LOW);
-     } else if (soilwaterCommand == "off") {
+     } else if (soilwaterCommand == "off" || wtankCommand =="off") {
        digitalWrite(B_1A, LOW); // LED 끄기
        digitalWrite(B_2B, LOW);
      }
@@ -91,6 +92,8 @@ void loop() {
      else if (ledCommand == "off") {
       digitalWrite(ledpin,LOW);
      }
+
+     
 
     
    }
