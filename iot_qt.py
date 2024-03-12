@@ -15,7 +15,7 @@ import json
 import pandas as pd
 import serial
 import threading
-
+from datetime import datetime
 
 class Camera(QThread):
     update = pyqtSignal(QImage)
@@ -80,8 +80,8 @@ class SensorManager(threading.Thread):
                         for sensor_id, callback in self.callbacks.items():
                             now = datetime.now()
                             time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
-                            data = (time_stamp, sensor_id, callback)
-                            iot_db.insert_sensor_data(data)
+                            log = (time_stamp, sensor_id, data[sensor_id])
+                            iot_db.insert_sensor_data(log)
                             if sensor_id in data:
                                 callback(data)
                     except json.JSONDecodeError:
