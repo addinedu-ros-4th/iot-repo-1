@@ -2,7 +2,7 @@ import sys
 from PyQt5.uic import loadUi
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QLineEdit,QDialog, QApplication, QStackedWidget
-from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint, QDate
+from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint, QDate, pyqtSignal
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from iot_database import Database
@@ -11,9 +11,10 @@ import time
 import cv2
 import requests
 from io import BytesIO, StringIO
-import socket
 import json
 import pandas as pd
+import serial
+import threading
 
 
 class Camera(QThread):
@@ -54,10 +55,40 @@ class Camera(QThread):
             cv2.imwrite(filename, frame)
             print(f"Image saved: {filename}")  
 
+class SensorThread(threading.Thread):
+    def __init__(self, port, baudrate, update_signal, sensor_id, callback):
+        threading.Thread.__init__(self)
+        self.port = port
+        self.baudrate = baudrate
+        self.update_signal = update_signal
+        self.sensor_id = sensor_id
+        self.callback = callback
+        self.running = False
+
+    def run(self):
+        self.running = True
+        ser = serial.Serial(self.port, self.baudrate, timeout=1)
+
+        try:
+            while self.running:
+                if ser.in_waiting > 0:
+                    line = ser.readline().decode('utf-8').rstrip()
+                    try:
+                        data = json.loads(line)
+                        # callback을통해 센서에게 명령전달
+                        self.callback(data)
+                    except json.JSONDecodeError:
+                        print(f"JSON decode error in sensor {self.sensor_id}:", line)
+        finally:
+            ser.close()
+
+    def stop(self):
+        self.running = False
+
 class WelcomeScreen(QDialog):
     def __init__(self):
         super(WelcomeScreen, self).__init__()
-        loadUi("login.ui", self)
+        loadUi("../iot-repo-1/login.ui", self)
         self.login.clicked.connect(self.gotoLogin)
         self.passwordfield.setEchoMode(QLineEdit.Password)
         widget.resize(1200, 735) 
@@ -69,9 +100,15 @@ class WelcomeScreen(QDialog):
         widget.setCurrentIndex(1)
 
 class LoginScreen(QDialog):
+
+    updateTempValSignal = pyqtSignal(str)
+    updateAirHumidValSignal = pyqtSignal(str)
+    updateGroundHumidValSignal = pyqtSignal(str)
+    updateBrightValSignal = pyqtSignal(str)
+
     def __init__(self):
         super(LoginScreen, self).__init__()
-        loadUi("iot_project.ui", self)
+        loadUi("../iot-repo-1/iot_project.ui", self)
         
         #Camera thread setting
         self.camera_thread1 = Camera(0)  
@@ -114,12 +151,12 @@ class LoginScreen(QDialog):
         self.HeightDisplay = self.findChild(QLabel, 'HeightDisplay')
         self.CamerDisplay = self.findChild(QLabel, 'CamerDisplay')
         
-        self.displayImageOnLabel("icon_pictogram/temp.png", self.TempDisplay)
-        self.displayImageOnLabel("icon_pictogram/airhumid.png", self.AirHumidDisplay)
-        self.displayImageOnLabel("icon_pictogram/ground_humid.png", self.GroundHumidDisplay)
-        self.displayImageOnLabel("icon_pictogram/bright.png", self.BrightDisplay)
-        self.displayImageOnLabel("icon_pictogram/height.png", self.HeightDisplay)
-        self.displayImageOnLabel("icon_pictogram/camera.png", self.CamerDisplay)
+        self.displayImageOnLabel("/home/ryu/amr_ws/arduino/iot-repo-1/icon_pictogram/temp.png", self.TempDisplay)
+        self.displayImageOnLabel("/home/ryu/amr_ws/arduino/iot-repo-1/icon_pictogram/airhumid.png", self.AirHumidDisplay)
+        self.displayImageOnLabel("/home/ryu/amr_ws/arduino/iot-repo-1/icon_pictogram/ground_humid.png", self.GroundHumidDisplay)
+        self.displayImageOnLabel("/home/ryu/amr_ws/arduino/iot-repo-1/icon_pictogram/bright.png", self.BrightDisplay)
+        self.displayImageOnLabel("/home/ryu/amr_ws/arduino/iot-repo-1/icon_pictogram/height.png", self.HeightDisplay)
+        self.displayImageOnLabel("/home/ryu/amr_ws/arduino/iot-repo-1/icon_pictogram/camera.png", self.CamerDisplay)
 
         #pannel design
         button_direction_mapping = {
@@ -149,6 +186,57 @@ class LoginScreen(QDialog):
         self.HeightVal = self.findChild(QLineEdit, 'HeightVal')
 
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
+
+        #signal test
+        self.updateTempValSignal.connect(self.updateTempVal)
+        self.startSensorThreads()
+
+    # Update the TempVal QLineEdit with the new value   (Hard Coding해야함 각각 센서 전부) 
+    def updateTempVal(self, value):
+        
+        self.TempVal.setText(value)
+
+    def startSensorThreads(self):
+        # temp thred init
+        self.tempSensorThread = SensorThread('/dev/ttyACM0', 9600, self.updateTempValSignal, "temperature", self.processSensorData)
+        self.tempSensorThread.start()
+        self.updateTempValSignal.connect(self.updateTempVal)
+
+        # airhum thred init
+        # self.airHumidSensorThread = SensorThread('/dev/ttyACM0', 9600, self.updateAirHumidValSignal, "humidity")
+        # self.airHumidSensorThread.start()
+        # self.updateAirHumidValSignal.connect(self.updateAirHumidVal)
+        
+        #other sensor also follow this format
+
+    def processSensorData(self, data):
+        # 여기에 센서 데이터 처리 로직을 추가
+        light = data.get("light", 0)
+        if light < 5: 
+            light = 5
+        elif light > 250:
+            light = 250
+        # UI에 데이터 업데이트
+        self.updateTempValSignal.emit(str(light))
+        # 명령 전송 로직
+        self.sendCommandToArduino({"led": light})
+
+    def sendCommandToArduino(self, command):
+        command_json = json.dumps(command) + '\n'
+        with serial.Serial('/dev/ttyACM0', 9600, timeout=1) as ser:
+            ser.write(command_json.encode())
+
+    def stopSensorThreads(self):
+    # TempVal 스레드 중단 로직
+        if self.tempSensorThread and self.tempSensorThread.is_alive():
+            self.tempSensorThread.stop()
+
+        # 다른 센서 스레드 중단 로직도 추가
+        # ...
+
+    def saveDataToJsonFile(self, data):
+        with open("serial_data.json", "w") as file:
+            json.dump(data, file, indent=4)
 
     #tablewidget with qlinedit
     def onTableWidgetCellClicked(self, row, column):
@@ -258,30 +346,24 @@ class LoginScreen(QDialog):
     #Resizing Method
     def onLogButtonClicked(self):
         if not self.expanded:
-            self.parentWidget().resize(1811, 735)  
+            self.parentWidget().resize(1811, 735)
             self.expanded = True
+            self.LogButton.setText("Event Log \n Off")
+            # 스레드 시작 로직을 여기에 추가
+            self.stopSensorThreads()
+
         else:
-            self.parentWidget().resize(1200, 735)  
+            self.parentWidget().resize(1200, 735)
             self.expanded = False
+            self.LogButton.setText("Event Log \n On")
+            # 스레드 중단 로직을 여기에 추가
+            self.startSensorThreads()
 
     #Calender Method
     def onDateSelected(self):
         selected_date = self.calender.selectedDate()
         self.DateField.setText(selected_date.toString("yyyy-MM-dd"))
-
-        df = self.SendDateToServer(selected_date.toString("yyyy-MM-dd"))
-        self.UpdateTableWidget(df)
-
-    # TableWidget update
-    def UpdateTableWidget(self, df):
-       
-        self.tableWidget.setRowCount(len(df))
-        self.tableWidget.setColumnCount(len(df.columns))
-        self.tableWidget.setHorizontalHeaderLabels(df.columns)
-
-        for row in range(len(df)):
-            for col in range(len(df.columns)):
-                self.tableWidget.setItem(row, col, QTableWidgetItem(str(df.iloc[row, col])))
+        self.DisplaySensorLog(selected_date)
 
     #png upload
     def displayImageOnLabel(self, imagePath, labelWidget):
@@ -316,42 +398,6 @@ class LoginScreen(QDialog):
         painter.end()
 
         return QIcon(pixmap)
-
-    #web socket commuincation with JSON file (qt --> server : 'selected_date' --> server )
-    def SendDateToServer(self, date_str):
-        # making JSON data
-        data = json.dumps({"selected_date": date_str})
-
-        # saving JSON : date info
-        with open("selected_date.json", "w") as file:
-            file.write(data)
-
-        # connect server
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect(("172.30.1.50", 8080))
-
-        # transmitte data
-        client_socket.sendall(data.encode('utf-8'))
-
-        # receive data from server
-        response = client_socket.recv(9000)
-        df_json = response.decode('utf-8')
-
-        # json to pandas.df
-        try:
-            s = StringIO(df_json)
-            df = pd.read_json(s, orient='records')
-        except ValueError as e:
-            print(f"JSON parsing error: {e}")
-            df = pd.DataFrame()
-
-        # json data saving
-        with open("client_data.json", "w") as file:
-            file.write(df_json)
-
-        client_socket.close()
-
-        return df
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
