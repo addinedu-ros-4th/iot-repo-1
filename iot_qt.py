@@ -17,6 +17,7 @@ import serial
 import threading
 from datetime import datetime
 
+
 class Camera(QThread):
     update = pyqtSignal(QImage)
     
@@ -119,6 +120,9 @@ class LoginScreen(QDialog):
     def __init__(self):
         super(LoginScreen, self).__init__()
         loadUi("../iot-repo-1/iot_project.ui", self)
+
+        #test actuator dict
+        self.commands = {}
         
         #Camera thread setting
         self.camera_thread1 = Camera(0)  
@@ -250,52 +254,69 @@ class LoginScreen(QDialog):
     def temp_control(self, data):
         temp_value = data["air_temp"] 
         self.updateTempValSignal.emit(str(temp_value))
+        self.sendCommandToArduino()
 
     def airhum_control(self, data):
         airhum_value = data["air_humi"]  
-        self.updateAirHumidValSignal.emit(str(airhum_value)) 
+
+        if airhum_value > 45 :
+            self.commands["servor1"] = 'on'
+            self.commands["propeller"] = 'on'
+        else :
+            self.commands["servor"] = 'off'
+            self.commands["propeller"] = 'off'
+        
+        self.updateAirHumidValSignal.emit(str(airhum_value))
+        self.sendCommandToArduino() 
+        
 
     def Gnd_hum_1_control(self, data):
         GND1_value = data["psoil_humi1"]  
+
+        if GND1_value < 20 :
+            self.commands["water"] = 'on'
+        else :
+            self.commands["water"] = 'off'
         self.updateGroundHumidVal_1_Signal.emit(str(GND1_value)) 
+        self.sendCommandToArduino()
 
     def Gnd_hum_2_control(self, data):
         GND2_value = data["psoil_humi2"]  
         self.updateGroundHumidVal_2_Signal.emit(str(GND2_value)) 
+        self.sendCommandToArduino()
 
     def Height_1_control(self, data):
         height1_value = data["distance1"] 
         self.updateHeighttVal_1_Signal.emit(str(height1_value)) 
+        self.sendCommandToArduino()
 
     def Height_2_control(self, data):
         height2_value = data["distance2"] 
         self.updateHeighttVal_2_Signal.emit(str(height2_value)) 
+        self.sendCommandToArduino()
 
     def bright_control(self, data):
         # logic
         light = data["pledval"]
         if light > 30: 
-            led_status = 'on'
+            self.commands['led'] = 'on'
         else :
-            led_status = 'off'
+            self.commands['led'] = 'off'
         # UI update
         self.updateBrightValSignal.emit(str(light))
         # transmitte
-        self.sendCommandToArduino({"led": led_status})
+        self.sendCommandToArduino()
 
-    def sendCommandToArduino(self, command):
-        command_json = json.dumps(command) + '\n'
+    def sendCommandToArduino(self):
+        command_json = json.dumps(self.commands) + '\n'
         with open("emit_data.json", "w") as file:
-            json.dump(command_json, file, indent=4)
+            json.dump(self.commands, file, indent=4) 
         with serial.Serial('/dev/ttyACM1', 9600, timeout=1) as ser:
             ser.write(command_json.encode())
 
     def stopSensorThreads(self):
         if self.sensorManager and self.sensorManager.is_alive():
             self.sensorManager.stop()
-
-    def saveDataToJsonFile(self, data):
-        pass
 
     #tablewidget with qlinedit
     def onTableWidgetCellClicked(self, row, column):
