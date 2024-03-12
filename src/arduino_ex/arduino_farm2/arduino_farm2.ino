@@ -1,6 +1,6 @@
 #include <ArduinoJson.h> //라이브러리 설치 필요
 #include <Wire.h> 
-#include <Servo.h> //Servo 라이브러리를 추가
+//#include <Servo.h> //Servo 라이브러리를 추가
 
 #define SOIL_HUMI2 A0
 #define TANK_WATER A1
@@ -50,11 +50,18 @@ void loop() {
 
  // 보내는 센서값 (토양습도2, 거리2, 조도, 탱크수위, 가습기 수위)
  StaticJsonDocument<200> sending_doc;
+ /*
  sending_doc["psoil_humi2"]  = psoil_humi2;
  sending_doc["distance2"]  = distance2;
  sending_doc["pledval"]  = pledval;
  sending_doc["tank_wlevel"]  = tank_wlevel;
  sending_doc["humi_wlevel"]  = humi_wlevel;  
+*/
+ sending_doc["psoil_humi2"]  = 0;
+ sending_doc["distance2"]  = 0;
+ sending_doc["pledval"]  = 0;
+ sending_doc["tank_wlevel"]  = 0;
+ sending_doc["humi_wlevel"]  = 0;  
 
  serializeJson(sending_doc, Serial);
  Serial.println();
@@ -66,13 +73,27 @@ void loop() {
    DeserializationError error = deserializeJson(recvDoc, Serial);
    
    if (!error) {
-     String ledCommand = recvDoc["pledval"];
+     String ledCommand = recvDoc["ledCommand"];
+     String soilwaterCommand = recvDoc["soilwaterCommand"];
      
-     if (ledCommand == "on") {
-       analogWrite(ledpin, pledval); // LED 켜기
-     } else if (ledCommand == "off") {
-       analogWrite(ledpin, LOW); // LED 끄기
+     
+
+     if (soilwaterCommand == "on") {
+       analogWrite(B_1A, 220); // LED 켜기
+       digitalWrite(B_2B,LOW);
+     } else if (soilwaterCommand == "off") {
+       digitalWrite(B_1A, LOW); // LED 끄기
+       digitalWrite(B_2B, LOW);
      }
+
+     if (ledCommand == "on") {
+      digitalWrite(ledpin,HIGH);
+     }
+     else if (ledCommand == "off") {
+      digitalWrite(ledpin,LOW);
+     }
+
+    
    }
  }
 
