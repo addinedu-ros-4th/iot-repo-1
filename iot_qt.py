@@ -66,7 +66,8 @@ class SensorManager(threading.Thread):
     def run(self):
         self.running = True
         ser = serial.Serial(self.port, self.baudrate, timeout=1)
-
+        iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
+        iot_db.connect()
         try:
             while self.running:
                 if ser.in_waiting > 0:
@@ -77,6 +78,10 @@ class SensorManager(threading.Thread):
                             json.dump(data, file, indent=4)
                         # 모든 콜백을 실행
                         for sensor_id, callback in self.callbacks.items():
+                            now = datetime.now()
+                            time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
+                            data = (time_stamp, sensor_id, callback)
+                            iot_db.insert_sensor_data(data)
                             if sensor_id in data:
                                 callback(data)
                     except json.JSONDecodeError:
