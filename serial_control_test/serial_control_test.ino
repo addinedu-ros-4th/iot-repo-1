@@ -60,7 +60,7 @@ void loop() {
  Serial.println();
 
  // 데이터 전송 후, 짧은 대기 시간을 두고 수신 데이터 확인
- delay(100); // 데이터 수신 준비
+ delay(10); // 데이터 수신 준비
 
  if (Serial.available()) {
    StaticJsonDocument<200> recvDoc;
@@ -77,5 +77,5 @@ void loop() {
    }
  }
 
- delay(100); // 다음 데이터 측정 및 전송을 위한 대기
+ delay(10); // 다음 데이터 측정 및 전송을 위한 대기
 }
