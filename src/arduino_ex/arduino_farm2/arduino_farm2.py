@@ -17,11 +17,11 @@ try:
                 print("pledval:", data["pledval"])
                 print("tank_wlevel", data["tank_wlevel"])
                 print("humi_wlevel:", data["humi_wlevel"])
-      
 
-                #command = {"led": "on"} if data["led"] > 60 else {"led": "off"}
-               	#command_json = json.dumps(command) + '\n'  # JSON 문자열로 변환 후 줄바꿈 추가
-                #ser.write(command_json.encode())  # 아두이노로 명령 전송
+                command = {"pledval": "on"} if data["pledval"] > 20 else {"pledval": "off"}
+                command_json = json.dumps(command) + '\n'  # JSON 문자열로 변환 후 줄바꿈 추가
+                ser.write(command_json.encode())  # 아두이노로 명령 전송
+
 
                 #  if (pledval > 20) { // 조도센서값이 60이 넘으면
                 #     analogWrite(ledpin, pledval);  // LED는 조도센서 값의 밝기로 켜라 
