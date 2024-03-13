@@ -129,10 +129,12 @@ class LoginScreen(QDialog):
 
         #test actuator dict
         self.commands = {}
+        self.image_label = self.findChild(QLabel, 'VisionLabel')
+        self.active_camera_thread = None
         
         #Camera thread setting
         self.camera_thread1 = Camera(0)  
-        self.camera_thread2 = Camera(2)
+        self.camera_thread2 = Camera(3)
         self.camera_thread1.update.connect(self.updateImage)  
         self.camera_thread2.update.connect(self.updateImage)
         self.BtnCamera = self.findChild(QPushButton, 'BtnCamera')
@@ -146,11 +148,7 @@ class LoginScreen(QDialog):
         self.BtnCapture.clicked.connect(self.captureImage) 
         
         #Pixmap default setting and Camera connecting
-        image_url = "https://blogfiles.pstatic.net/MjAxNzEwMjJfMTEx/MDAxNTA4Njc4Njc1Njc3.C85V2pebYoO1miLHHj2sy_AAHZucqI3xs6GItxNk-k8g.4S5V4XrzkeGgT7znHjFmchmdceDOTLuEGO-D-8DWmY0g.PNG.verdicorporation/%EC%8A%A4%EB%A7%88%ED%8A%B8%ED%8C%9C.png"
-        response = requests.get(image_url)
-        image = QImage()
-        image.loadFromData(response.content)
-        self.defaultImage = QPixmap(image)
+        self.defaultImage = QPixmap('/home/ryu/amr_ws/arduino/iot-repo-1/icon_pictogram/smart_farm.png')
 
         #resizing Pixmap
         self.VisionLabel.setPixmap(self.defaultImage)
@@ -245,7 +243,7 @@ class LoginScreen(QDialog):
         }
 
         # 단일 SensorManager 인스턴스 생성
-        self.sensorManager = SensorManager('/dev/ttyACM0', 9600, callbacks)
+        self.sensorManager = SensorManager('/dev/ttyACM2', 9600, callbacks)
         self.sensorManager.start()
 
         # UI 업데이트용 신호 연결
@@ -275,7 +273,6 @@ class LoginScreen(QDialog):
         self.updateAirHumidValSignal.emit(str(airhum_value))
         self.sendCommandToArduino() 
         
-
     def Gnd_hum_1_control(self, data):
         GND1_value = data["psoil_humi1"]  
 
@@ -317,38 +314,55 @@ class LoginScreen(QDialog):
         command_json = json.dumps(self.commands) + '\n'
         with open("emit_data.json", "w") as file:
             json.dump(self.commands, file, indent=4) 
-        with serial.Serial('/dev/ttyACM0', 9600, timeout=1) as ser:
+        with serial.Serial('/dev/ttyACM2', 9600, timeout=1) as ser:
             ser.write(command_json.encode())
 
     def stopSensorThreads(self):
         if self.sensorManager and self.sensorManager.is_alive():
             self.sensorManager.stop()
 
-    #tablewidget with qlinedit
+    # #tablewidget with qlinedit
+    # def onTableWidgetCellClicked(self, row, column):
+    #     time_column_index = 0
+
+    #     if column == time_column_index:
+    #         # temp_column_index = 1
+    #         # temp_value = self.tableWidget.item(row, temp_column_index).text()
+    #         # self.TempVal.setText(temp_value)
+
+    #         # air_hum_column_index = 2
+    #         # air_hum_value = self.tableWidget.item(row, air_hum_column_index).text()
+    #         # self.AirHumidVal.setText(air_hum_value)
+
+    #         # gnd_hum_column_index = 3
+    #         # gnd_hum_value = self.tableWidget.item(row, gnd_hum_column_index).text()
+    #         # self.GroundHumidVal.setText(gnd_hum_value)
+
+    #         # bright_column_index = 4
+    #         # bright_value = self.tableWidget.item(row, bright_column_index).text()
+    #         # self.BrightVal.setText(bright_value)
+
+    #         # # T.B.D(수수깡높이측정)
+    #         # # height_column_index = 5
+    #         # # height_value = self.tableWidget.item(row, height_column_index).text()
+    #         # # self.HeightVal.setText(height_value)
+
+    #         camera_image_column_index = 1
+    #         image_path = self.tableWidget.item(row, camera_image_column_index).text()
+    #         pixmap = QPixmap(image_path)
+    #         self.imageLabel.setPixmap(pixmap.scaled(self.imageLabel.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
     def onTableWidgetCellClicked(self, row, column):
         time_column_index = 0
 
         if column == time_column_index:
-            temp_column_index = 1
-            temp_value = self.tableWidget.item(row, temp_column_index).text()
-            self.TempVal.setText(temp_value)
+            camera_image_column_index = 1
+            item = self.tableWidget.item(row, camera_image_column_index)
 
-            air_hum_column_index = 2
-            air_hum_value = self.tableWidget.item(row, air_hum_column_index).text()
-            self.AirHumidVal.setText(air_hum_value)
+            if item is not None:
+                image_path = item.text()
+                pixmap = QPixmap(image_path)
+                self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
-            gnd_hum_column_index = 3
-            gnd_hum_value = self.tableWidget.item(row, gnd_hum_column_index).text()
-            self.GroundHumidVal.setText(gnd_hum_value)
-
-            bright_column_index = 4
-            bright_value = self.tableWidget.item(row, bright_column_index).text()
-            self.BrightVal.setText(bright_value)
-
-            # T.B.D(수수깡높이측정)
-            # height_column_index = 5
-            # height_value = self.tableWidget.item(row, height_column_index).text()
-            # self.HeightVal.setText(height_value)
 
     #connect table with DB (T.B.D)
     def DisplaySensorLog(self, selected_date=None):
@@ -397,7 +411,8 @@ class LoginScreen(QDialog):
             if other_camera_thread.isRunning():
                 other_camera_thread.stop()
                 other_camera_thread.wait()
-                other_button.setText(f"Plant {plant_number if plant_number == 1 else 2} Off")
+                other_button.setText(f"Plant {plant_number if plant_number == 1 else 2} \n on")
+                self.image_label.setPixmap(self.defaultImage.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
                 other_button.show()
 
             camera_thread_to_toggle.start()
@@ -406,6 +421,24 @@ class LoginScreen(QDialog):
             other_button.hide()
             self.BtnCapture.show()
     
+    def startCameraThreads(self):
+        # 카메라 스레드 시작 로직
+        if self.camera_thread1 and not self.camera_thread1.isRunning():
+            self.camera_thread1.start()
+        if self.camera_thread2 and not self.camera_thread2.isRunning():
+            self.camera_thread2.start()
+
+    def stopCameraThreads(self):
+        # 카메라 스레드 중단 로직
+        if self.camera_thread1 and self.camera_thread1.isRunning():
+            self.camera_thread1.stop()
+            self.camera_thread1.wait()
+        if self.camera_thread2 and self.camera_thread2.isRunning():
+            self.camera_thread2.stop()
+            self.camera_thread2.wait()
+        self.image_label.setPixmap(self.defaultImage.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+       
+
     def create_new_camera_thread(self, camera_index):
         if camera_index == 0:
             self.camera_thread1 = Camera(camera_index)
@@ -432,12 +465,14 @@ class LoginScreen(QDialog):
             iot_db.close()
 
     def updateImage(self, qt_image):
-        self.image_label = self.findChild(QLabel, 'VisionLabel') 
-        pixmap = QPixmap.fromImage(qt_image)
-        self.image_label.setPixmap(QPixmap.fromImage(qt_image))
-        scaled_pixmap = pixmap.scaled(self.image_label.width(), self.image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
-        self.image_label.setPixmap(scaled_pixmap)
+        if self.active_camera_thread and self.active_camera_thread.isRunning():
+            self.image_label = self.findChild(QLabel, 'VisionLabel') 
+            pixmap = QPixmap.fromImage(qt_image)
+            scaled_pixmap = pixmap.scaled(self.image_label.width(), self.image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            self.image_label.setPixmap(scaled_pixmap)
+        else:
+            # 카메라 스레드가 실행되지 않을 때 기본 이미지 표시
+            self.image_label.setPixmap(self.defaultImage)
 
     #Resizing Method
     def onLogButtonClicked(self):
@@ -447,6 +482,8 @@ class LoginScreen(QDialog):
             self.LogButton.setText("Event Log \n Off")
             # 스레드 시작 로직을 여기에 추가
             self.stopSensorThreads()
+            
+            self.stopCameraThreads()
 
         else:
             self.parentWidget().resize(1200, 735)
@@ -454,6 +491,7 @@ class LoginScreen(QDialog):
             self.LogButton.setText("Event Log \n On")
             # 스레드 중단 로직을 여기에 추가
             self.startSensorThreads()
+            self.startCameraThreads()
 
     #Calender Method
     def onDateSelected(self):
