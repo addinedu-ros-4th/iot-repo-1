@@ -129,6 +129,8 @@ class LoginScreen(QDialog):
 
         #test actuator dict
         self.commands = {}
+        self.image_label = self.findChild(QLabel, 'VisionLabel')
+        self.active_camera_thread = None
         
         #Camera thread setting
         self.camera_thread1 = Camera(0)  
@@ -146,11 +148,7 @@ class LoginScreen(QDialog):
         self.BtnCapture.clicked.connect(self.captureImage) 
         
         #Pixmap default setting and Camera connecting
-        image_url = "https://blogfiles.pstatic.net/MjAxNzEwMjJfMTEx/MDAxNTA4Njc4Njc1Njc3.C85V2pebYoO1miLHHj2sy_AAHZucqI3xs6GItxNk-k8g.4S5V4XrzkeGgT7znHjFmchmdceDOTLuEGO-D-8DWmY0g.PNG.verdicorporation/%EC%8A%A4%EB%A7%88%ED%8A%B8%ED%8C%9C.png"
-        response = requests.get(image_url)
-        image = QImage()
-        image.loadFromData(response.content)
-        self.defaultImage = QPixmap(image)
+        self.defaultImage = QPixmap('/home/ryu/amr_ws/arduino/iot-repo-1/icon_pictogram/smart_farm.png')
 
         #resizing Pixmap
         self.VisionLabel.setPixmap(self.defaultImage)
@@ -323,36 +321,48 @@ class LoginScreen(QDialog):
         if self.sensorManager and self.sensorManager.is_alive():
             self.sensorManager.stop()
 
-    #tablewidget with qlinedit
+    # #tablewidget with qlinedit
+    # def onTableWidgetCellClicked(self, row, column):
+    #     time_column_index = 0
+
+    #     if column == time_column_index:
+    #         # temp_column_index = 1
+    #         # temp_value = self.tableWidget.item(row, temp_column_index).text()
+    #         # self.TempVal.setText(temp_value)
+
+    #         # air_hum_column_index = 2
+    #         # air_hum_value = self.tableWidget.item(row, air_hum_column_index).text()
+    #         # self.AirHumidVal.setText(air_hum_value)
+
+    #         # gnd_hum_column_index = 3
+    #         # gnd_hum_value = self.tableWidget.item(row, gnd_hum_column_index).text()
+    #         # self.GroundHumidVal.setText(gnd_hum_value)
+
+    #         # bright_column_index = 4
+    #         # bright_value = self.tableWidget.item(row, bright_column_index).text()
+    #         # self.BrightVal.setText(bright_value)
+
+    #         # # T.B.D(수수깡높이측정)
+    #         # # height_column_index = 5
+    #         # # height_value = self.tableWidget.item(row, height_column_index).text()
+    #         # # self.HeightVal.setText(height_value)
+
+    #         camera_image_column_index = 1
+    #         image_path = self.tableWidget.item(row, camera_image_column_index).text()
+    #         pixmap = QPixmap(image_path)
+    #         self.imageLabel.setPixmap(pixmap.scaled(self.imageLabel.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
     def onTableWidgetCellClicked(self, row, column):
         time_column_index = 0
 
         if column == time_column_index:
-            # temp_column_index = 1
-            # temp_value = self.tableWidget.item(row, temp_column_index).text()
-            # self.TempVal.setText(temp_value)
+            camera_image_column_index = 1
+            item = self.tableWidget.item(row, camera_image_column_index)
 
-            # air_hum_column_index = 2
-            # air_hum_value = self.tableWidget.item(row, air_hum_column_index).text()
-            # self.AirHumidVal.setText(air_hum_value)
+            if item is not None:
+                image_path = item.text()
+                pixmap = QPixmap(image_path)
+                self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
-            # gnd_hum_column_index = 3
-            # gnd_hum_value = self.tableWidget.item(row, gnd_hum_column_index).text()
-            # self.GroundHumidVal.setText(gnd_hum_value)
-
-            # bright_column_index = 4
-            # bright_value = self.tableWidget.item(row, bright_column_index).text()
-            # self.BrightVal.setText(bright_value)
-
-            # # T.B.D(수수깡높이측정)
-            # # height_column_index = 5
-            # # height_value = self.tableWidget.item(row, height_column_index).text()
-            # # self.HeightVal.setText(height_value)
-
-            camera_image_column_index = 2
-            image_path = self.tableWidget.item(row, camera_image_column_index).text()
-            pixmap = QPixmap(image_path)
-            self.imageLabel.setPixmap(pixmap.scaled(self.imageLabel.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     #connect table with DB (T.B.D)
     def DisplaySensorLog(self, selected_date=None):
@@ -401,7 +411,8 @@ class LoginScreen(QDialog):
             if other_camera_thread.isRunning():
                 other_camera_thread.stop()
                 other_camera_thread.wait()
-                other_button.setText(f"Plant {plant_number if plant_number == 1 else 2} Off")
+                other_button.setText(f"Plant {plant_number if plant_number == 1 else 2} \n on")
+                self.image_label.setPixmap(self.defaultImage.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
                 other_button.show()
 
             camera_thread_to_toggle.start()
@@ -425,6 +436,8 @@ class LoginScreen(QDialog):
         if self.camera_thread2 and self.camera_thread2.isRunning():
             self.camera_thread2.stop()
             self.camera_thread2.wait()
+        self.image_label.setPixmap(self.defaultImage.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+       
 
     def create_new_camera_thread(self, camera_index):
         if camera_index == 0:
@@ -452,12 +465,14 @@ class LoginScreen(QDialog):
             iot_db.close()
 
     def updateImage(self, qt_image):
-        self.image_label = self.findChild(QLabel, 'VisionLabel') 
-        pixmap = QPixmap.fromImage(qt_image)
-        self.image_label.setPixmap(QPixmap.fromImage(qt_image))
-        scaled_pixmap = pixmap.scaled(self.image_label.width(), self.image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
-        self.image_label.setPixmap(scaled_pixmap)
+        if self.active_camera_thread and self.active_camera_thread.isRunning():
+            self.image_label = self.findChild(QLabel, 'VisionLabel') 
+            pixmap = QPixmap.fromImage(qt_image)
+            scaled_pixmap = pixmap.scaled(self.image_label.width(), self.image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            self.image_label.setPixmap(scaled_pixmap)
+        else:
+            # 카메라 스레드가 실행되지 않을 때 기본 이미지 표시
+            self.image_label.setPixmap(self.defaultImage)
 
     #Resizing Method
     def onLogButtonClicked(self):
