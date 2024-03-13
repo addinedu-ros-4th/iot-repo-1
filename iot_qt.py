@@ -203,11 +203,11 @@ class LoginScreen(QDialog):
         
 
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
-        self.tempMaxButton = QPushButton('TempMax', self)
-        self.tempMaxButton.clicked.connect(self.tempMaxPressed)
+        self.TempMax = QPushButton('TempMax', self)
+        self.TempMax.clicked.connect(self.tempMaxPressed)
 
-        self.tempMinButton = QPushButton('TempMin', self)
-        self.tempMinButton.clicked.connect(self.tempMinPressed)
+        self.TempMin = QPushButton('TempMin', self)
+        self.TempMin.clicked.connect(self.tempMinPressed)
 
         self.startSensorThreads()
 
@@ -218,13 +218,13 @@ class LoginScreen(QDialog):
         self.commands['led'] = 'on'
         self.manualControlActive = True
         self.sendCommandToArduino()
-        QTimer.singleShot(5000, self.resetManualControl)  # 5초 후에 자동으로 리셋
+        QTimer.singleShot(500, self.resetManualControl)  # 5초 후에 자동으로 리셋
 
     def tempMinPressed(self):
         self.commands['led'] = 'off'
         self.manualControlActive = True
         self.sendCommandToArduino()
-        QTimer.singleShot(5000, self.resetManualControl)  # 5초 후에 자동으로 리셋
+        QTimer.singleShot(500, self.resetManualControl)  # 5초 후에 자동으로 리셋
 
     def resetManualControl(self):
         self.manualControlActive = False
@@ -338,9 +338,8 @@ class LoginScreen(QDialog):
     def sendCommandToArduino(self):
         command_json = json.dumps(self.commands) + '\n'
         with open("emit_data.json", "w") as file:
-            json.dump(self.commands, file) 
-        with serial.Serial('/dev/ttyACM0', 9600, timeout=1) as ser:
-            ser.write(command_json.encode())
+            json.dump(self.commands, file, indent= 4) 
+        self.ser.write(command_json.encode())
 
     def stopSensorThreads(self):
         if self.sensorManager and self.sensorManager.is_alive():
