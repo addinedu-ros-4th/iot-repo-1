@@ -231,7 +231,7 @@ class LoginScreen(QDialog):
         self.HeightVal_2.setText(value)
 
     def startSensorThreads(self):
-        # 센서별 콜백 함수들을 딕셔너리에 정의
+        # sensor callback function
         callbacks = {
             "air_temp": self.temp_control,
             "air_humi": self.airhum_control,
@@ -242,11 +242,11 @@ class LoginScreen(QDialog):
             "pledval": self.bright_control
         }
 
-        # 단일 SensorManager 인스턴스 생성
+        # sensor thread On
         self.sensorManager = SensorManager('/dev/ttyACM2', 9600, callbacks)
         self.sensorManager.start()
 
-        # UI 업데이트용 신호 연결
+        # UI update
         self.updateTempValSignal.connect(self.updateTempVal)
         self.updateAirHumidValSignal.connect(self.updateAirHumid)
         self.updateGroundHumidVal_1_Signal.connect(self.updateGndHumid_1)
