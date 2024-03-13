@@ -173,7 +173,7 @@ class Database:
             sd.psoil_humi2,
             sd.distance1,
             sd.distance2,
-            sd.pldeval,
+            sd.pledval,
             e.camera_image_path
         FROM
             event_log e
@@ -186,7 +186,7 @@ class Database:
                 MAX(CASE WHEN s.sensor_type = 'psoil_humi2' THEN s.value ELSE NULL END) AS psoil_humi2,
                 MAX(CASE WHEN s.sensor_type = 'distance1' THEN s.value ELSE NULL END) AS distance1,
                 MAX(CASE WHEN s.sensor_type = 'distance2' THEN s.value ELSE NULL END) AS distance2,
-                MAX(CASE WHEN s.sensor_type = 'pldeval' THEN s.value ELSE NULL END) AS pldeval
+                MAX(CASE WHEN s.sensor_type = 'pledval' THEN s.value ELSE NULL END) AS pledval
             FROM
                 sensor_data s
             GROUP BY
