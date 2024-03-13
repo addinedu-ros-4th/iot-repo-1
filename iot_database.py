@@ -8,19 +8,19 @@ import pandas as pd
 sensor_type_list = ["air_temp", "air_humi", "psoil_humi1", "psoil_humi2",  "distance1", "distance2", "pledval"]
 
 event_command_dict = {
-#   "밝기 상승" : ???    
-    "밝기 하락" : "LED 동작", 
-    "air_humi 상승" : "프로펠러 동작, 환풍구 열림",
-    "air_humi 하락" : "가습기 동작",
-    "psoil_humi1 상승" : "알림",
-    "psoil_humi1 하락" : "물 공급",
-    "psoil_humi2 상승" : "알림",
-    "psoil_humi2 하락" : "물 공급",
-    "air_temp 상승" : "팬 동작",
-    "air_temp 하락" : "방열 코일 동작",
-    "물탱크 물부족" : "알림",
-    "캡쳐" : "캡쳐",
-    "성장" : "알림"
+#   "light increase" : ???    
+    "light decrease" : "LED on", 
+    "air_humi increase" : "propeller on, vent open",
+    "air_humi dncrease" : "humidifier on",
+    "psoil_humi1 increase" : "notification",
+    "psoil_humi1 decrease" : "water supply",
+    "psoil_humi2 increase" : "notification",
+    "psoil_humi2 decrease" : "water supply",
+    "air_temp increase" : "propeller on",
+    "air_temp decrease" : "film heater on",
+    "water_tank shortage" : "notification",
+    "capture" : "notification",
+    "growth" : "notification"
     }
 
 
@@ -75,48 +75,48 @@ class Database:
 
         if sensor_type == "air_temp":
             if value < 25:
-                event = "air_temp 하락"
+                event = "air_temp decrease"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
         elif sensor_type == "air_humi":
             if value > 45:
-                event = "air_humi 상승"
+                event = "air_humi increase"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
         elif sensor_type == "psoil_humi1":
             if value > 80:
-                event = "psoil_humi1 상승"
+                event = "psoil_humi1 increase"
                 command = event_command_dict[event]
             elif value < 20:
-                event = "psoil_humi1 하락"
+                event = "psoil_humi1 decrease"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
         elif sensor_type == "psoil_humi2":
             if value > 7:
-                event = "psoil_humi2 상승"
+                event = "psoil_humi2 increase"
                 command = event_command_dict[event]
             elif value < 3:
-                event = "psoil_humi2 하락"
+                event = "psoil_humi2 decrease"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
         elif sensor_type == "distance1":
             if value > 7:
-                event = "성장"
+                event = "growth"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
         elif sensor_type == "distance2":
             if value > 7:
-                event = "성장"
+                event = "growth"
                 command = event_command_dict[event]
             else:
                 event = None
@@ -136,7 +136,7 @@ class Database:
     #             max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
     #             max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `GndHum`, 
     #             max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
-    #             max(case when s.sensor_type = 'distance1' then s.value end) as `Growth`
+    #             max(case when s.sensor_type = 'distance1' then s.value end) as `growth`
     #         from event_log e
     #         join sensor_data s on e.time_stamp = s.time_stamp
     #         where date(e.time_stamp) = %s
@@ -149,7 +149,7 @@ class Database:
     #             max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
     #             max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `GndHum`, 
     #             max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
-    #             max(case when s.sensor_type = 'distance1' then s.value end) as `Growth`
+    #             max(case when s.sensor_type = 'distance1' then s.value end) as `growth`
     #         from event_log e
     #         join sensor_data s on e.time_stamp = s.time_stamp
     #         where date(e.time_stamp) = %s and event = %s
@@ -163,21 +163,38 @@ class Database:
         cursor = self.conn.cursor()
 
         query = """
-        select substring(e.time_stamp, 12, 8) as "time_stamp",
+        SELECT
+            e.time_stamp,
             e.event,
             e.command,
-            max(case when s.sensor_type = 'air_temp' then s.value end) as `air_temp`,
-            max(case when s.sensor_type = 'air_humi' then s.value end) as `air_humi`,
-            max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `psoil_humi1`,
-            max(case when s.sensor_type = 'psoil_humi1' then s.value end) as `psoil_humi2`, 
-            max(case when s.sensor_type = 'distance1' then s.value end) as `distance1`,
-            max(case when s.sensor_type = 'distance2' then s.value end) as `distance2`,
-            max(case when s.sensor_type = 'pldeval' then s.value end) as `pledval`,
-            e. camera_image_path
-        from event_log e
-        join sensor_data s on e.time_stamp = s.time_stamp
-        where date(e.time_stamp) = %s
-        group by e.time_stamp
+            sd.air_temp,
+            sd.air_humi,
+            sd.psoil_humi1,
+            sd.psoil_humi2,
+            sd.distance1,
+            sd.distance2,
+            sd.pldeval,
+            e.camera_image_path
+        FROM
+            event_log e
+        JOIN
+            (SELECT
+                s.time_stamp,
+                MAX(CASE WHEN s.sensor_type = 'air_temp' THEN s.value ELSE NULL END) AS air_temp,
+                MAX(CASE WHEN s.sensor_type = 'air_humi' THEN s.value ELSE NULL END) AS air_humi,
+                MAX(CASE WHEN s.sensor_type = 'psoil_humi1' THEN s.value ELSE NULL END) AS psoil_humi1,
+                MAX(CASE WHEN s.sensor_type = 'psoil_humi2' THEN s.value ELSE NULL END) AS psoil_humi2,
+                MAX(CASE WHEN s.sensor_type = 'distance1' THEN s.value ELSE NULL END) AS distance1,
+                MAX(CASE WHEN s.sensor_type = 'distance2' THEN s.value ELSE NULL END) AS distance2,
+                MAX(CASE WHEN s.sensor_type = 'pldeval' THEN s.value ELSE NULL END) AS pldeval
+            FROM
+                sensor_data s
+            GROUP BY
+                s.time_stamp) sd ON e.time_stamp = sd.time_stamp
+        WHERE
+            DATE(e.time_stamp) = %s
+        ORDER BY
+            e.time_stamp;
         """
         # max(case when s.sensor_type = 'Light' then s.value end) as `Bright`,
 
@@ -212,7 +229,7 @@ def main():
 
     iot_db.connect()
 
-    for i in range(2):
+    for i in range(5):
         now = datetime.now()
         time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
         for sensor_type in sensor_type_list:
@@ -228,13 +245,13 @@ def main():
 
         camera = random.randint(0, 1)
         if camera == 1:
-            event = "캡쳐"
+            event = "capture"
             command = event_command_dict[event]
             log = (None, time_stamp, event, command, camera_image_path)
             iot_db.insert_capture_log(log)
         time.sleep(1)
 
-    selected_date = "2024-03-12"
+    selected_date = "2024-03-13"
     df = iot_db.watch_log(selected_date)
     print(df)
     iot_db.close()
