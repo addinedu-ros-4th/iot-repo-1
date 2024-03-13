@@ -18,6 +18,7 @@ import threading
 from datetime import datetime
 
 
+
 class Camera(QThread):
     update = pyqtSignal(QImage)
     
@@ -72,25 +73,21 @@ class SensorManager(threading.Thread):
         try:
             while self.running:
                 if ser.in_waiting > 0:
-                    line = ser.readline().decode('utf-8', errors='ignore').rstrip()
+                    line = ser.readline().decode('utf-8').rstrip()
                     try:
                         data = json.loads(line)
-                        with open("serial_data.json", "w") as file:
-                            json.dump(data, file, indent=4)
-                        for sensor_id, callback in self.callbacks.items():
-                            now = datetime.now()
-                            time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
-                            sensor_data = (time_stamp, sensor_id, data[sensor_id])
-                            iot_db.insert_sensor_data(sensor_data)
-                            sensor_data_id, event, command = iot_db.check_event(time_stamp, sensor_id, data[sensor_id])
-                            if event is not None:
-                                camera_image_path = f"capture_data/{time_stamp}.jpg"
-                                event_log = (sensor_data_id, time_stamp, event, command, camera_image_path)
-                                iot_db.insert_event_log(event_log)
-                                
-                        # 모든 콜백을 실행
-                            if sensor_id in data:
-                                callback(data)
+                        # JSON 데이터가 딕셔너리인지 확인
+                        if isinstance(data, dict):
+                            with open("serial_data.json", "w") as file:
+                                json.dump(data, file, indent=4)
+                            for sensor_id, callback in self.callbacks.items():
+                                now = datetime.now()
+                                time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
+                                # sensor_id가 data 딕셔너리에 있는지 확인
+                                if sensor_id in data:
+                                    sensor_data = (time_stamp, sensor_id, data[sensor_id])
+                                    iot_db.insert_sensor_data(sensor_data)
+                                    callback(data)
                     except json.JSONDecodeError:
                         print(f"JSON decode error:", line)
         finally:
@@ -106,7 +103,6 @@ class WelcomeScreen(QDialog):
         self.login.clicked.connect(self.gotoLogin)
         self.passwordfield.setEchoMode(QLineEdit.Password)
         widget.resize(1200, 735) 
-
 
     def gotoLogin(self):
         login_screen = LoginScreen()
@@ -204,10 +200,35 @@ class LoginScreen(QDialog):
         self.BrightVal = self.findChild(QLineEdit, 'BrightVal')
         self.HeightVal_1 = self.findChild(QLineEdit, 'HeightVal')
         self.HeightVal_2 = self.findChild(QLineEdit, 'HeightVal_2')
+        
 
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
+        self.tempMaxButton = QPushButton('TempMax', self)
+        self.tempMaxButton.clicked.connect(self.tempMaxPressed)
+
+        self.tempMinButton = QPushButton('TempMin', self)
+        self.tempMinButton.clicked.connect(self.tempMinPressed)
 
         self.startSensorThreads()
+
+        #success
+        self.manualControlActive = False 
+
+    def tempMaxPressed(self):
+        self.commands['led'] = 'on'
+        self.manualControlActive = True
+        self.sendCommandToArduino()
+        QTimer.singleShot(5000, self.resetManualControl)  # 5초 후에 자동으로 리셋
+
+    def tempMinPressed(self):
+        self.commands['led'] = 'off'
+        self.manualControlActive = True
+        self.sendCommandToArduino()
+        QTimer.singleShot(5000, self.resetManualControl)  # 5초 후에 자동으로 리셋
+
+    def resetManualControl(self):
+        self.manualControlActive = False
+
 
     def updateBright(self, value):
         self.BrightVal.setText(value)
@@ -236,14 +257,14 @@ class LoginScreen(QDialog):
             "air_temp": self.temp_control,
             "air_humi": self.airhum_control,
             "psoil_humi1": self.Gnd_hum_1_control,
-            "psoil_humi2": self.Gnd_hum_2_control,
+            # "psoil_humi2": self.Gnd_hum_2_control,
             "distance1": self.Height_1_control,
-            "distance2": self.Height_2_control,
+            # "distance2": self.Height_2_control,
             "pledval": self.bright_control
         }
 
         # sensor thread On
-        self.sensorManager = SensorManager('/dev/ttyACM2', 9600, callbacks)
+        self.sensorManager = SensorManager('/dev/ttyACM0', 9600, callbacks)
         self.sensorManager.start()
 
         # UI update
@@ -262,31 +283,33 @@ class LoginScreen(QDialog):
 
     def airhum_control(self, data):
         airhum_value = data["air_humi"]  
-
-        if airhum_value > 45 :
-            self.commands["servor1"] = 'on'
-            self.commands["propeller"] = 'on'
-        else :
-            self.commands["servor"] = 'off'
-            self.commands["propeller"] = 'off'
-        
+        # if not self.manualControlActive: 
+        #     if airhum_value > 45 :
+        #         self.commands["servor1"] = 'on'
+        #         self.commands["propeller"] = 'on'
+        #         self.captureImage()
+        #     else :
+        #         self.commands["servor1"] = 'off'
+        #         self.commands["propeller"] = 'off'
+            
         self.updateAirHumidValSignal.emit(str(airhum_value))
         self.sendCommandToArduino() 
         
     def Gnd_hum_1_control(self, data):
         GND1_value = data["psoil_humi1"]  
-
-        if GND1_value < 20 :
-            self.commands["water"] = 'on'
-        else :
-            self.commands["water"] = 'off'
+        # if not self.manualControlActive: 
+        #     if GND1_value < 20 :
+        #         self.commands["water"] = 'on'
+        #         self.captureImage()
+        #     else :
+        #         self.commands["water"] = 'off'
         self.updateGroundHumidVal_1_Signal.emit(str(GND1_value)) 
         self.sendCommandToArduino()
 
-    def Gnd_hum_2_control(self, data):
-        GND2_value = data["psoil_humi2"]  
-        self.updateGroundHumidVal_2_Signal.emit(str(GND2_value)) 
-        self.sendCommandToArduino()
+    # def Gnd_hum_2_control(self, data):
+    #     GND2_value = data["psoil_humi2"]  
+    #     self.updateGroundHumidVal_2_Signal.emit(str(GND2_value)) 
+    #     self.sendCommandToArduino()
 
     def Height_1_control(self, data):
         height1_value = data["distance1"] 
@@ -300,21 +323,23 @@ class LoginScreen(QDialog):
 
     def bright_control(self, data):
         # logic
-        light = data["pledval"]
-        if light > 30: 
-            self.commands['led'] = 'on'
-        else :
-            self.commands['led'] = 'off'
-        # UI update
-        self.updateBrightValSignal.emit(str(light))
-        # transmitte
-        self.sendCommandToArduino()
+        if not self.manualControlActive: 
+            light = data["pledval"]
+            if light > 30: 
+                self.commands['led'] = 'on'
+                # self.captureImage()
+            else :
+                self.commands['led'] = 'off'
+            # UI update
+            self.updateBrightValSignal.emit(str(light))
+            # transmitte
+            self.sendCommandToArduino()
 
     def sendCommandToArduino(self):
         command_json = json.dumps(self.commands) + '\n'
         with open("emit_data.json", "w") as file:
-            json.dump(self.commands, file, indent=4) 
-        with serial.Serial('/dev/ttyACM2', 9600, timeout=1) as ser:
+            json.dump(self.commands, file) 
+        with serial.Serial('/dev/ttyACM0', 9600, timeout=1) as ser:
             ser.write(command_json.encode())
 
     def stopSensorThreads(self):
@@ -361,6 +386,8 @@ class LoginScreen(QDialog):
         self.tableWidget.setRowCount(len(self.df_filtered))
         self.tableWidget.setColumnCount(len(self.df_filtered.columns))
         self.tableWidget.setHorizontalHeaderLabels(self.df_filtered.columns)
+        header = self.tableWidget.horizontalHeader()
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
 
         for row in range(len(self.df_filtered)):
             for col in range(len(self.df_filtered.columns)):
