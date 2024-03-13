@@ -321,55 +321,29 @@ class LoginScreen(QDialog):
         if self.sensorManager and self.sensorManager.is_alive():
             self.sensorManager.stop()
 
-    # #tablewidget with qlinedit
-    # def onTableWidgetCellClicked(self, row, column):
-    #     time_column_index = 0
-
-    #     if column == time_column_index:
-    #         # temp_column_index = 1
-    #         # temp_value = self.tableWidget.item(row, temp_column_index).text()
-    #         # self.TempVal.setText(temp_value)
-
-    #         # air_hum_column_index = 2
-    #         # air_hum_value = self.tableWidget.item(row, air_hum_column_index).text()
-    #         # self.AirHumidVal.setText(air_hum_value)
-
-    #         # gnd_hum_column_index = 3
-    #         # gnd_hum_value = self.tableWidget.item(row, gnd_hum_column_index).text()
-    #         # self.GroundHumidVal.setText(gnd_hum_value)
-
-    #         # bright_column_index = 4
-    #         # bright_value = self.tableWidget.item(row, bright_column_index).text()
-    #         # self.BrightVal.setText(bright_value)
-
-    #         # # T.B.D(수수깡높이측정)
-    #         # # height_column_index = 5
-    #         # # height_value = self.tableWidget.item(row, height_column_index).text()
-    #         # # self.HeightVal.setText(height_value)
-
-    #         camera_image_column_index = 1
-    #         image_path = self.tableWidget.item(row, camera_image_column_index).text()
-    #         pixmap = QPixmap(image_path)
-    #         self.imageLabel.setPixmap(pixmap.scaled(self.imageLabel.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
     def onTableWidgetCellClicked(self, row, column):
         time_column_index = 0
 
         if column == time_column_index:
-            camera_image_column_index = 1
-            item = self.tableWidget.item(row, camera_image_column_index)
-
-            if item is not None:
-                image_path = item.text()
+            # QlineEdit mapping
+            self.TempVal.setText(str(self.df_full.iloc[row]['air_temp']))
+            self.AirHumidVal.setText(str(self.df_full.iloc[row]['air_humi']))
+            self.GroundHumidVal.setText(str(self.df_full.iloc[row]['psoil_humi1']))
+            self.GroundHumidVal_2.setText(str(self.df_full.iloc[row]['psoil_humi2']))
+            self.HeightVal_1.setText(str(self.df_full.iloc[row]['distance1']))
+            self.HeightVal_2.setText(str(self.df_full.iloc[row]['distance2']))
+            self.BrightVal.setText(str(self.df_full.iloc[row]['pledval']))
+            # capture img to db
+            image_path = self.df_filtered.iloc[row]['camera_image_path']
+            if image_path:
                 pixmap = QPixmap(image_path)
                 self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
-
 
     #connect table with DB (T.B.D)
     def DisplaySensorLog(self, selected_date=None):
         if selected_date is None:
             selected_date = self.calender.selectedDate()
         
-        # Check if selected_date is a QDate and convert to string if necessary
         if isinstance(selected_date, QDate):
             selected_date_str = selected_date.toString("yyyy-MM-dd")
         else:
@@ -378,15 +352,19 @@ class LoginScreen(QDialog):
         iot_db = Database("iot-project.czcywiaew4o2.ap-northeast-2.rds.amazonaws.com", 3306, "admin", "qwer1234", "iot_project")
         iot_db.connect()
 
-        df = iot_db.watch_log(selected_date_str) 
+        # total db
+        self.df_full = iot_db.watch_log(selected_date_str)
+        
+        # filtered db
+        self.df_filtered = self.df_full[['time_stamp', 'event', 'command', 'camera_image_path']]
 
-        self.tableWidget.setRowCount(len(df))
-        self.tableWidget.setColumnCount(len(df.columns))
-        self.tableWidget.setHorizontalHeaderLabels(df.columns)
+        self.tableWidget.setRowCount(len(self.df_filtered))
+        self.tableWidget.setColumnCount(len(self.df_filtered.columns))
+        self.tableWidget.setHorizontalHeaderLabels(self.df_filtered.columns)
 
-        for row in range(len(df)):
-            for col in range(len(df.columns)):
-                self.tableWidget.setItem(row, col, QTableWidgetItem(str(df.iloc[row, col])))
+        for row in range(len(self.df_filtered)):
+            for col in range(len(self.df_filtered.columns)):
+                self.tableWidget.setItem(row, col, QTableWidgetItem(str(self.df_filtered.iloc[row, col])))
 
         iot_db.close()
             
@@ -422,14 +400,14 @@ class LoginScreen(QDialog):
             self.BtnCapture.show()
     
     def startCameraThreads(self):
-        # 카메라 스레드 시작 로직
+        # thread start
         if self.camera_thread1 and not self.camera_thread1.isRunning():
             self.camera_thread1.start()
         if self.camera_thread2 and not self.camera_thread2.isRunning():
             self.camera_thread2.start()
 
     def stopCameraThreads(self):
-        # 카메라 스레드 중단 로직
+        # thread off
         if self.camera_thread1 and self.camera_thread1.isRunning():
             self.camera_thread1.stop()
             self.camera_thread1.wait()
@@ -471,7 +449,7 @@ class LoginScreen(QDialog):
             scaled_pixmap = pixmap.scaled(self.image_label.width(), self.image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
             self.image_label.setPixmap(scaled_pixmap)
         else:
-            # 카메라 스레드가 실행되지 않을 때 기본 이미지 표시
+            # camera not working > defaultimage
             self.image_label.setPixmap(self.defaultImage)
 
     #Resizing Method
@@ -480,16 +458,13 @@ class LoginScreen(QDialog):
             self.parentWidget().resize(1811, 735)
             self.expanded = True
             self.LogButton.setText("Event Log \n Off")
-            # 스레드 시작 로직을 여기에 추가
             self.stopSensorThreads()
-            
             self.stopCameraThreads()
 
         else:
             self.parentWidget().resize(1200, 735)
             self.expanded = False
             self.LogButton.setText("Event Log \n On")
-            # 스레드 중단 로직을 여기에 추가
             self.startSensorThreads()
             self.startCameraThreads()
 
