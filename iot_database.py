@@ -74,14 +74,14 @@ class Database:
         sensor_data_id = self.get_data_id(time_stamp, sensor_type, value)
 
         if sensor_type == "air_temp":
-            if value < 25:
+            if value < 20:
                 event = "air_temp decrease"
                 command = event_command_dict[event]
             else:
                 event = None
                 command = None
         elif sensor_type == "air_humi":
-            if value > 45:
+            if value > 60:
                 event = "air_humi increase"
                 command = event_command_dict[event]
             else:
@@ -91,7 +91,7 @@ class Database:
             if value > 80:
                 event = "psoil_humi1 increase"
                 command = event_command_dict[event]
-            elif value < 20:
+            elif value < 10:
                 event = "psoil_humi1 decrease"
                 command = event_command_dict[event]
             else:
@@ -107,7 +107,7 @@ class Database:
             else:
                 event = None
                 command = None
-        elif sensor_type == "distance1":
+        elif sensor_type == "distance":
             if value > 7:
                 event = "growth"
                 command = event_command_dict[event]
@@ -171,7 +171,7 @@ class Database:
             sd.air_humi,
             sd.psoil_humi1,
             sd.psoil_humi2,
-            sd.distance1,
+            sd.distance,
             sd.distance2,
             sd.pledval,
             e.camera_image_path
@@ -184,7 +184,7 @@ class Database:
                 MAX(CASE WHEN s.sensor_type = 'air_humi' THEN s.value ELSE NULL END) AS air_humi,
                 MAX(CASE WHEN s.sensor_type = 'psoil_humi1' THEN s.value ELSE NULL END) AS psoil_humi1,
                 MAX(CASE WHEN s.sensor_type = 'psoil_humi2' THEN s.value ELSE NULL END) AS psoil_humi2,
-                MAX(CASE WHEN s.sensor_type = 'distance1' THEN s.value ELSE NULL END) AS distance1,
+                MAX(CASE WHEN s.sensor_type = 'distance' THEN s.value ELSE NULL END) AS distance,
                 MAX(CASE WHEN s.sensor_type = 'distance2' THEN s.value ELSE NULL END) AS distance2,
                 MAX(CASE WHEN s.sensor_type = 'pledval' THEN s.value ELSE NULL END) AS pledval
             FROM

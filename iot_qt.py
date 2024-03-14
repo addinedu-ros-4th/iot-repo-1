@@ -131,7 +131,7 @@ class LoginScreen(QDialog):
         self.active_camera_thread = None
         
         #Camera thread setting
-        self.camera_thread1 = Camera(0)  
+        self.camera_thread1 = Camera(1)  
         self.camera_thread2 = Camera(3)
         self.camera_thread1.update.connect(self.updateImage)  
         self.camera_thread2.update.connect(self.updateImage)
@@ -296,7 +296,7 @@ class LoginScreen(QDialog):
             "air_humi": self.airhum_control,
             "psoil_humi1": self.Gnd_hum_1_control,
             # "psoil_humi2": self.Gnd_hum_2_control,
-            "distance1": self.Height_1_control,
+            "distance": self.Height_1_control,
             # "distance2": self.Height_2_control,
             "pledval": self.bright_control
         }
@@ -317,12 +317,12 @@ class LoginScreen(QDialog):
     def temp_control(self, data):
         temp_value = data["air_temp"] 
         self.updateTempValSignal.emit(str(temp_value))
-        self.sendCommandToArduino()
+        
 
     def airhum_control(self, data):
         airhum_value = data["air_humi"]  
         if not self.manualControlActive: 
-            if airhum_value > 40 :
+            if airhum_value > 60 :
                 self.commands["servo1"] = 'on'
                 self.commands["propeller"] = 'on'
                 # self.captureImage()
@@ -336,7 +336,7 @@ class LoginScreen(QDialog):
     def Gnd_hum_1_control(self, data):
         GND1_value = data["psoil_humi1"]  
         if not self.manualControlActive: 
-            if GND1_value < 30 :
+            if GND1_value < 10 :
                 self.commands["water"] = 'on'
                 # self.captureImage()
             else :
@@ -350,14 +350,14 @@ class LoginScreen(QDialog):
     #     self.sendCommandToArduino()
 
     def Height_1_control(self, data):
-        height1_value = data["distance1"] 
+        height1_value = data["distance"] 
         self.updateHeighttVal_1_Signal.emit(str(height1_value)) 
-        self.sendCommandToArduino()
+
 
     def Height_2_control(self, data):
         height2_value = data["distance2"] 
         self.updateHeighttVal_2_Signal.emit(str(height2_value)) 
-        self.sendCommandToArduino()
+
 
     def bright_control(self, data):
         # logic
@@ -371,7 +371,7 @@ class LoginScreen(QDialog):
             # # UI update
         self.updateBrightValSignal.emit(str(light))
         # transmitte
-        self.sendCommandToArduino()
+        # self.sendCommandToArduino()
 
     def sendCommandToArduino(self):
         command_json = json.dumps(self.commands) + '\n'
@@ -396,7 +396,7 @@ class LoginScreen(QDialog):
             self.AirHumidVal.setText(str(self.df_full.iloc[row]['air_humi']))
             self.GroundHumidVal.setText(str(self.df_full.iloc[row]['psoil_humi1']))
             self.GroundHumidVal_2.setText(str(self.df_full.iloc[row]['psoil_humi2']))
-            self.HeightVal_1.setText(str(self.df_full.iloc[row]['distance1']))
+            self.HeightVal_1.setText(str(self.df_full.iloc[row]['distance']))
             self.HeightVal_2.setText(str(self.df_full.iloc[row]['distance2']))
             self.BrightVal.setText(str(self.df_full.iloc[row]['pledval']))
             # capture img to db
