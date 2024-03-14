@@ -2,7 +2,7 @@ import sys
 from PyQt5.uic import loadUi
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QLineEdit,QDialog, QApplication, QStackedWidget
-from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint, QDate, pyqtSignal
+from PyQt5.QtCore import QPropertyAnimation, QSize, QThread, pyqtSignal, Qt, QPoint, QDate, pyqtSignal, QTimer
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from iot_database import Database
@@ -73,13 +73,13 @@ class SensorManager(threading.Thread):
         try:
             while self.running:
                 if ser.in_waiting > 0:
-                    line = ser.readline().decode('utf-8').rstrip()
+                    line = ser.readline().decode('utf-8',errors='ignore').rstrip()
                     try:
                         data = json.loads(line)
                         # JSON 데이터가 딕셔너리인지 확인
                         if isinstance(data, dict):
-                            with open("serial_data.json", "w") as file:
-                                json.dump(data, file, indent=4)
+                            # with open("serial_data.json", "w") as file:
+                            #     json.dump(data, file,indent=4)
                             for sensor_id, callback in self.callbacks.items():
                                 now = datetime.now()
                                 time_stamp = now.strftime('%Y-%m-%d %H:%M:%S')
@@ -90,8 +90,10 @@ class SensorManager(threading.Thread):
                                     callback(data)
                     except json.JSONDecodeError:
                         print(f"JSON decode error:", line)
+                        continue
         finally:
             ser.close()
+
 
     def stop(self):
         self.running = False
@@ -201,30 +203,66 @@ class LoginScreen(QDialog):
         self.HeightVal_1 = self.findChild(QLineEdit, 'HeightVal')
         self.HeightVal_2 = self.findChild(QLineEdit, 'HeightVal_2')
         
-
         self.tableWidget.cellClicked.connect(self.onTableWidgetCellClicked)
-        self.TempMax = QPushButton('TempMax', self)
-        self.TempMax.clicked.connect(self.tempMaxPressed)
 
-        self.TempMin = QPushButton('TempMin', self)
-        self.TempMin.clicked.connect(self.tempMinPressed)
+        self.BrightMax = self.findChild(QPushButton, 'BrightMax')
+        self.BrightMin = self.findChild(QPushButton, 'BrightMin')
+        self.BrightMax.clicked.connect(self.BrightMaxPressed)
+        self.BrightMin.clicked.connect(self.BrightMinPressed)
+
+        self.AirHumMax = self.findChild(QPushButton, 'AirHumMax')
+        self.AirHumMin = self.findChild(QPushButton, 'AirHumMin')
+        self.AirHumMax.clicked.connect(self.AirHumMaxPressed)
+        self.AirHumMin.clicked.connect(self.AirHumMinPressed)
+
+        self.GndHumMax = self.findChild(QPushButton, 'GndHumMax')
+        self.GndHumMin = self.findChild(QPushButton, 'GndHumMin')
+        self.GndHumMax.clicked.connect(self.GndHumMaxPressed)
+        self.GndHumMin.clicked.connect(self.GndHumMinPressed)
 
         self.startSensorThreads()
 
         #success
         self.manualControlActive = False 
+        self.ser = serial.Serial('/dev/ttyACM1', 9600, timeout=1)
 
-    def tempMaxPressed(self):
+    def BrightMaxPressed(self):
         self.commands['led'] = 'on'
         self.manualControlActive = True
         self.sendCommandToArduino()
-        QTimer.singleShot(500, self.resetManualControl)  # 5초 후에 자동으로 리셋
+        QTimer.singleShot(3000, self.resetManualControl)  # 3초 후에 자동으로 리셋
 
-    def tempMinPressed(self):
+    def BrightMinPressed(self):
         self.commands['led'] = 'off'
         self.manualControlActive = True
         self.sendCommandToArduino()
-        QTimer.singleShot(500, self.resetManualControl)  # 5초 후에 자동으로 리셋
+        QTimer.singleShot(3000, self.resetManualControl)  # 3초 후에 자동으로 리셋
+
+    def AirHumMaxPressed(self):
+        self.commands['servo1'] = 'on'
+        self.commands['propeller'] = 'on'
+        self.manualControlActive = True
+        self.sendCommandToArduino()
+        QTimer.singleShot(3000, self.resetManualControl)  # 3초 후에 자동으로 리셋
+
+    def AirHumMinPressed(self):
+        self.commands['servo1'] = 'off'
+        self.commands['propeller'] = 'off'
+        self.manualControlActive = True
+        self.sendCommandToArduino()
+        QTimer.singleShot(3000, self.resetManualControl)  # 3초 후에 자동으로 리셋
+
+    def GndHumMaxPressed(self):
+        self.commands['water'] = 'on'
+        self.manualControlActive = True
+        self.sendCommandToArduino()
+        QTimer.singleShot(3000, self.resetManualControl)  # 3초 후에 자동으로 리셋
+
+    def GndHumMinPressed(self):
+        self.commands['water'] = 'off'
+        self.manualControlActive = True
+        self.sendCommandToArduino()
+        QTimer.singleShot(3000, self.resetManualControl)  # 3초 후에 자동으로 리셋
 
     def resetManualControl(self):
         self.manualControlActive = False
@@ -264,7 +302,7 @@ class LoginScreen(QDialog):
         }
 
         # sensor thread On
-        self.sensorManager = SensorManager('/dev/ttyACM0', 9600, callbacks)
+        self.sensorManager = SensorManager('/dev/ttyACM1', 9600, callbacks)
         self.sensorManager.start()
 
         # UI update
@@ -283,28 +321,28 @@ class LoginScreen(QDialog):
 
     def airhum_control(self, data):
         airhum_value = data["air_humi"]  
-        # if not self.manualControlActive: 
-        #     if airhum_value > 45 :
-        #         self.commands["servor1"] = 'on'
-        #         self.commands["propeller"] = 'on'
-        #         self.captureImage()
-        #     else :
-        #         self.commands["servor1"] = 'off'
-        #         self.commands["propeller"] = 'off'
+        if not self.manualControlActive: 
+            if airhum_value > 40 :
+                self.commands["servo1"] = 'on'
+                self.commands["propeller"] = 'on'
+                # self.captureImage()
+            else :
+                self.commands["servo1"] = 'off'
+                self.commands["propeller"] = 'off'
             
         self.updateAirHumidValSignal.emit(str(airhum_value))
         self.sendCommandToArduino() 
         
     def Gnd_hum_1_control(self, data):
         GND1_value = data["psoil_humi1"]  
-        # if not self.manualControlActive: 
-        #     if GND1_value < 20 :
-        #         self.commands["water"] = 'on'
-        #         self.captureImage()
-        #     else :
-        #         self.commands["water"] = 'off'
-        self.updateGroundHumidVal_1_Signal.emit(str(GND1_value)) 
-        self.sendCommandToArduino()
+        if not self.manualControlActive: 
+            if GND1_value < 30 :
+                self.commands["water"] = 'on'
+                # self.captureImage()
+            else :
+                self.commands["water"] = 'off'
+            self.updateGroundHumidVal_1_Signal.emit(str(GND1_value)) 
+            self.sendCommandToArduino()
 
     # def Gnd_hum_2_control(self, data):
     #     GND2_value = data["psoil_humi2"]  
@@ -323,23 +361,27 @@ class LoginScreen(QDialog):
 
     def bright_control(self, data):
         # logic
-        if not self.manualControlActive: 
-            light = data["pledval"]
-            if light > 30: 
-                self.commands['led'] = 'on'
-                # self.captureImage()
-            else :
-                self.commands['led'] = 'off'
-            # UI update
-            self.updateBrightValSignal.emit(str(light))
-            # transmitte
-            self.sendCommandToArduino()
+        # if not self.manualControlActive: 
+        light = data["pledval"]
+            # if light > 30: 
+            #     self.commands['led'] = 'on'
+            #     # self.captureImage()
+            # else :
+            #     self.commands['led'] = 'off'
+            # # UI update
+        self.updateBrightValSignal.emit(str(light))
+        # transmitte
+        self.sendCommandToArduino()
 
     def sendCommandToArduino(self):
         command_json = json.dumps(self.commands) + '\n'
         with open("emit_data.json", "w") as file:
-            json.dump(self.commands, file, indent= 4) 
+            json.dump(self.commands, file,indent=4) 
         self.ser.write(command_json.encode())
+        # for command in self.commands.items():
+        #     command_json = json.dumps({command[0]: command[1]}) + '\n'
+        #     self.ser.write(command_json.encode())
+        time.sleep(1) 
 
     def stopSensorThreads(self):
         if self.sensorManager and self.sensorManager.is_alive():
