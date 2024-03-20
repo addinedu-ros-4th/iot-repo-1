@@ -64,8 +64,18 @@
 |7|특정 이벤트 조회|센서를 통한 이상 값 이벤트 발생, 캡쳐기능 발생 기록들을 조회 가능|
 
 ## 소프트웨어 및 하드웨어 구성
+### 하드웨어 구성도  
+![image](https://github.com/addinedu-ros-4th/iot-repo-1/assets/55430286/581911ac-92f8-457c-8d14-abe5bf92e8a9)
 
-
+### 소프트웨어 구성도
+![image](https://github.com/addinedu-ros-4th/iot-repo-1/assets/55430286/d4bbb682-bf9b-4076-ade6-4699dfbc1c45)
+  
+### 제어 알고리즘
+![image](https://github.com/addinedu-ros-4th/iot-repo-1/assets/55430286/0689dede-2664-4ffd-a70f-003cfaac44a8)
+  
+### 통신 시 JSON
+![image](https://github.com/addinedu-ros-4th/iot-repo-1/assets/55430286/c92a7d90-807a-49f0-ade2-42684fba7988)
+  
 ## 시연 영상
 
 [![Video Label](http://img.youtube.com/vi/ScW8iWov_TY/0.jpg)](https://www.youtube.com/watch?v=ScW8iWov_TY&t=2s)
