@@ -68,6 +68,6 @@
 
 ## 시연 영상
 
-[![Video Label](http://img.youtube.com/vi/ScW8iWov_TY/0.jpg)]
+[![Video Label](http://img.youtube.com/vi/ScW8iWov_TY/0.jpg)](https://www.youtube.com/watch?v=ScW8iWov_TY&t=2s)
 
 ## 후속 보완점
